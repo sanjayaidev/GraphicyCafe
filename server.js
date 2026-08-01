@@ -15,7 +15,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static(__dirname));
+
+// Only serve static files when running locally (not on Vercel)
+if (!process.env.VERCEL) {
+  app.use(express.static(__dirname));
+}
 
 // ─── AUTH MIDDLEWARE ───
 // Staff roles that are allowed into the admin panel at all. The `roles` table
@@ -1029,6 +1033,15 @@ app.delete("/api/admin/testimonials/:id", requireAuth, async (req, res) => {
 });
 
 // ─── START SERVER ───
-app.listen(PORT, () => {
-  console.log(`\n🔥 GraphicyCafe server running at http://localhost:${PORT}\n`);
-});
+// Export for Vercel serverless
+const handler = async (req, res) => {
+  app(req, res);
+};
+
+export default handler;
+
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`\n🔥 GraphicyCafe server running at http://localhost:${PORT}\n`);
+  });
+}
