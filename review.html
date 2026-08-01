@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GraphicyCafe — Write a Review</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --color-bg: #17140F;
+  --color-surface: #211C15;
+  --color-surface-raised: #2B2419;
+  --color-ivory: #F3ECDD;
+  --color-ivory-dim: #C9BFA9;
+  --color-amber: #E3A63D;
+  --color-amber-dim: #B9822B;
+  --color-ember: #C2542A;
+  --color-green: #7CB77B;
+  --color-red: #D4685C;
+  --color-line: rgba(243, 236, 221, 0.12);
+  --color-line-strong: rgba(243, 236, 221, 0.22);
+
+  --font-display: 'Fraunces', 'Georgia', serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SFMono-Regular', monospace;
+
+  --radius-lg: 20px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ivory);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+img { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font-family: inherit; }
+input, textarea { cursor: auto; }
+
+:focus-visible {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 2px;
+}
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--color-amber);
+  color: #211405;
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 14px;
+  z-index: 200;
+  animation: fadeInUp 0.3s ease;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── DEMO PAGE CONTENT ─── */
+.demo-page {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 0 24px;
+  text-align: center;
+}
+
+.demo-page h1 {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.demo-page p {
+  color: var(--color-ivory-dim);
+  font-size: 16px;
+  margin: 0 0 32px;
+}
+
+.demo-product-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: 32px;
+  max-width: 400px;
+  margin: 0 auto;
+  text-align: center;
+}
+.demo-product-card .product-icon {
+  font-size: 64px;
+  margin-bottom: 8px;
+}
+.demo-product-card h2 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  margin: 0 0 4px;
+}
+.demo-product-card .product-category {
+  font-size: 13px;
+  color: var(--color-ivory-dim);
+  font-family: var(--font-mono);
+}
+.demo-product-card .product-price {
+  font-size: 20px;
+  color: var(--color-amber);
+  font-weight: 600;
+  margin: 12px 0;
+}
+.review-trigger-btn {
+  background: var(--color-amber);
+  color: #211405;
+  border: none;
+  padding: 12px 28px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 15px;
+  transition: background 0.15s ease;
+  cursor: pointer;
+}
+.review-trigger-btn:hover {
+  background: var(--color-amber-dim);
+}
+
+/* ─── REVIEW OVERLAY ─── */
+.review-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.review-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ─── REVIEW MODAL ─── */
+.review-modal {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  transform: scale(0.95) translateY(20px);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.review-overlay.open .review-modal {
+  transform: scale(1) translateY(0);
+}
+
+.review-modal .modal-close {
+  float: right;
+  background: none;
+  border: none;
+  color: var(--color-ivory-dim);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: color 0.15s ease;
+}
+.review-modal .modal-close:hover {
+  color: var(--color-ivory);
+}
+
+.review-modal h2 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+.review-modal .subtitle {
+  font-size: 14px;
+  color: var(--color-ivory-dim);
+  margin: 0 0 20px;
+}
+
+/* Product being reviewed */
+.review-product {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  border: 1px solid var(--color-line);
+}
+.review-product .icon {
+  font-size: 32px;
+}
+.review-product .info .name {
+  font-weight: 600;
+  font-size: 15px;
+}
+.review-product .info .category {
+  font-size: 12px;
+  color: var(--color-ivory-dim);
+}
+
+/* ─── RATING STARS ─── */
+.rating-section {
+  margin-bottom: 20px;
+}
+.rating-section label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--color-ivory);
+}
+.star-rating {
+  display: flex;
+  gap: 4px;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+.star-rating input {
+  display: none;
+}
+.star-rating label {
+  font-size: 36px;
+  color: var(--color-ivory-dim);
+  cursor: pointer;
+  transition: color 0.15s ease, transform 0.15s ease;
+  padding: 0 2px;
+  line-height: 1;
+}
+.star-rating label:hover,
+.star-rating label:hover ~ label,
+.star-rating input:checked ~ label {
+  color: var(--color-amber);
+  transform: scale(1.1);
+}
+.star-rating input:checked + label {
+  color: var(--color-amber);
+}
+.rating-label {
+  font-size: 13px;
+  color: var(--color-ivory-dim);
+  margin-top: 6px;
+}
+
+/* ─── FORM FIELDS ─── */
+.form-group {
+  margin-bottom: 16px;
+}
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-ivory);
+  margin-bottom: 6px;
+}
+.form-group label .required {
+  color: var(--color-red);
+  margin-left: 2px;
+}
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  background: var(--color-bg);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  color: var(--color-ivory);
+  font-size: 14px;
+  transition: border-color 0.15s ease;
+}
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  border-color: var(--color-amber);
+  outline: none;
+}
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: var(--color-ivory-dim);
+  opacity: 0.5;
+}
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+.form-group .hint {
+  font-size: 11px;
+  color: var(--color-ivory-dim);
+  margin-top: 4px;
+}
+
+/* ─── PHOTO UPLOAD ─── */
+.photo-upload {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.photo-upload .upload-btn {
+  background: var(--color-bg);
+  border: 1px dashed var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  color: var(--color-ivory-dim);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.photo-upload .upload-btn:hover {
+  border-color: var(--color-amber);
+  color: var(--color-amber);
+}
+.photo-upload .upload-btn input {
+  display: none;
+}
+.photo-preview {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.photo-preview .preview-item {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+}
+.photo-preview .preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.photo-preview .preview-item .remove-photo {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-red);
+  color: #fff;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+.photo-preview .preview-item .remove-photo:hover {
+  transform: scale(1.15);
+}
+
+/* ─── CHECKBOX TOGGLE ─── */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+.toggle-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-amber);
+  cursor: pointer;
+}
+.toggle-row label {
+  font-size: 13px;
+  color: var(--color-ivory-dim);
+  cursor: pointer;
+}
+
+/* ─── MODAL ACTIONS ─── */
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-line);
+}
+.modal-actions .btn-cancel {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--color-line-strong);
+  color: var(--color-ivory-dim);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+.modal-actions .btn-cancel:hover {
+  border-color: var(--color-ivory);
+  color: var(--color-ivory);
+}
+.modal-actions .btn-submit {
+  flex: 2;
+  background: var(--color-amber);
+  color: #211405;
+  border: none;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  transition: background 0.15s ease;
+  cursor: pointer;
+}
+.modal-actions .btn-submit:hover {
+  background: var(--color-amber-dim);
+}
+.modal-actions .btn-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── SUCCESS STATE ─── */
+.review-success {
+  display: none;
+  text-align: center;
+  padding: 20px 0;
+}
+.review-success .icon {
+  font-size: 64px;
+  margin-bottom: 12px;
+}
+.review-success h3 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  margin: 0 0 8px;
+}
+.review-success p {
+  color: var(--color-ivory-dim);
+  font-size: 14px;
+  margin: 0 0 20px;
+}
+.review-success .btn-done {
+  background: var(--color-amber);
+  color: #211405;
+  border: none;
+  padding: 12px 32px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.review-success .btn-done:hover {
+  background: var(--color-amber-dim);
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 480px) {
+  .review-modal {
+    padding: 20px;
+    margin: 10px;
+  }
+  .star-rating label {
+    font-size: 28px;
+  }
+  .modal-actions {
+    flex-direction: column;
+  }
+  .modal-actions .btn-cancel,
+  .modal-actions .btn-submit {
+    flex: 1;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast" id="toast" style="display:none;"></div>
+
+<!-- ═══ DEMO PAGE CONTENT ═══ -->
+<div class="demo-page">
+  <h1>⭐ Write a Review</h1>
+  <p>Click the button below to open the review submission popup.</p>
+
+  <div class="demo-product-card">
+    <div class="product-icon">🍰</div>
+    <h2>Layer Cake</h2>
+    <div class="product-category">Desserts · Pastry</div>
+    <div class="product-price">$18.00</div>
+    <button class="review-trigger-btn" onclick="openReviewPopup('cake')">Write a review</button>
+  </div>
+</div>
+
+<!-- ═══ REVIEW POPUP ═══ -->
+<div class="review-overlay" id="reviewOverlay" onclick="closeReviewPopup(event)">
+  <div class="review-modal" onclick="event.stopPropagation()">
+
+    <!-- Close Button -->
+    <button class="modal-close" onclick="closeReviewPopup()">✕</button>
+
+    <!-- Review Form -->
+    <div id="reviewFormContainer">
+      <h2>Write a review</h2>
+      <p class="subtitle">Share your experience with this dish</p>
+
+      <!-- Product Info -->
+      <div class="review-product">
+        <span class="icon">🍰</span>
+        <div class="info">
+          <div class="name" id="reviewProductName">Layer Cake</div>
+          <div class="category" id="reviewProductCategory">Desserts · Pastry</div>
+        </div>
+      </div>
+
+      <!-- Rating -->
+      <div class="rating-section">
+        <label>Your rating <span class="required">*</span></label>
+        <div class="star-rating" id="starRating">
+          <input type="radio" name="rating" id="star5" value="5">
+          <label for="star5" title="5 stars">★</label>
+          <input type="radio" name="rating" id="star4" value="4">
+          <label for="star4" title="4 stars">★</label>
+          <input type="radio" name="rating" id="star3" value="3">
+          <label for="star3" title="3 stars">★</label>
+          <input type="radio" name="rating" id="star2" value="2">
+          <label for="star2" title="2 stars">★</label>
+          <input type="radio" name="rating" id="star1" value="1">
+          <label for="star1" title="1 star">★</label>
+        </div>
+        <div class="rating-label" id="ratingLabel">Select a rating</div>
+      </div>
+
+      <!-- Name -->
+      <div class="form-group">
+        <label>Your name <span class="required">*</span></label>
+        <input type="text" id="reviewName" placeholder="e.g. John Doe" maxlength="50">
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label>Email <span class="required">*</span></label>
+        <input type="email" id="reviewEmail" placeholder="john@example.com">
+        <div class="hint">We'll never share your email with anyone.</div>
+      </div>
+
+      <!-- Title -->
+      <div class="form-group">
+        <label>Review title <span class="required">*</span></label>
+        <input type="text" id="reviewTitle" placeholder="e.g. Absolutely delicious!" maxlength="80">
+      </div>
+
+      <!-- Review Text -->
+      <div class="form-group">
+        <label>Your review <span class="required">*</span></label>
+        <textarea id="reviewText" placeholder="Share your experience with this dish... What did you like? Would you recommend it?" maxlength="1000"></textarea>
+        <div class="hint" id="charCount">0 / 1000 characters</div>
+      </div>
+
+      <!-- Photos -->
+      <div class="form-group">
+        <label>Add photos (optional)</label>
+        <div class="photo-upload">
+          <div class="upload-btn">
+            📷 Upload photos
+            <input type="file" id="photoInput" accept="image/*" multiple onchange="handlePhotoUpload(event)">
+          </div>
+          <div class="photo-preview" id="photoPreview"></div>
+        </div>
+        <div class="hint">Upload up to 5 photos of the dish (JPEG, PNG, WebP)</div>
+      </div>
+
+      <!-- Options -->
+      <div class="toggle-row">
+        <input type="checkbox" id="reviewAnonymous">
+        <label for="reviewAnonymous">Post anonymously</label>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="reviewConsent" checked>
+        <label for="reviewConsent">I confirm this review is based on my genuine experience</label>
+      </div>
+
+      <!-- Actions -->
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeReviewPopup()">Cancel</button>
+        <button class="btn-submit" id="submitReviewBtn" onclick="submitReview()">Submit review</button>
+      </div>
+    </div>
+
+    <!-- Success State -->
+    <div class="review-success" id="reviewSuccess">
+      <div class="icon">✅</div>
+      <h3>Review submitted!</h3>
+      <p>Thank you for sharing your experience. Your review will help others discover great dishes.</p>
+      <button class="btn-done" onclick="closeReviewPopup()">Done</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── STATE ───
+let selectedProduct = null;
+let uploadedPhotos = [];
+let currentRating = 0;
+
+// ─── PRODUCT DATA ───
+const PRODUCTS = {
+  cake: {
+    id: 'cake',
+    name: 'Layer Cake',
+    category: 'Desserts · Pastry',
+    icon: '🍰'
+  },
+  salmon: {
+    id: 'salmon',
+    name: 'Charred Miso Salmon',
+    category: 'Mains · Robata Grill',
+    icon: '🍣'
+  }
+};
+
+// ─── HELPERS ───
+function showToast(msg, isError = false) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.style.display = 'block';
+  toast.style.background = isError ? 'var(--color-red)' : 'var(--color-amber)';
+  toast.style.color = isError ? '#fff' : '#211405';
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => {
+    toast.style.display = 'none';
+  }, 3000);
+}
+
+// ─── OPEN REVIEW POPUP ───
+function openReviewPopup(productId) {
+  const product = PRODUCTS[productId];
+  if (!product) {
+    showToast('Product not found', true);
+    return;
+  }
+
+  selectedProduct = product;
+  currentRating = 0;
+  uploadedPhotos = [];
+
+  // Reset form
+  document.getElementById('reviewFormContainer').style.display = 'block';
+  document.getElementById('reviewSuccess').style.display = 'none';
+  document.getElementById('reviewName').value = '';
+  document.getElementById('reviewEmail').value = '';
+  document.getElementById('reviewTitle').value = '';
+  document.getElementById('reviewText').value = '';
+  document.getElementById('reviewAnonymous').checked = false;
+  document.getElementById('reviewConsent').checked = true;
+  document.getElementById('photoPreview').innerHTML = '';
+  document.getElementById('charCount').textContent = '0 / 1000 characters';
+  document.getElementById('submitReviewBtn').disabled = false;
+
+  // Reset stars
+  document.querySelectorAll('#starRating input').forEach(input => input.checked = false);
+  document.getElementById('ratingLabel').textContent = 'Select a rating';
+
+  // Set product info
+  document.getElementById('reviewProductName').textContent = product.name;
+  document.getElementById('reviewProductCategory').textContent = product.category;
+  document.querySelector('.review-product .icon').textContent = product.icon;
+
+  // Open modal
+  document.getElementById('reviewOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+// ─── CLOSE REVIEW POPUP ───
+function closeReviewPopup(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('reviewOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ─── STAR RATING ───
+document.querySelectorAll('#starRating input').forEach(input => {
+  input.addEventListener('change', function() {
+    currentRating = parseInt(this.value);
+    const labels = {
+      1: 'Terrible',
+      2: 'Poor',
+      3: 'Average',
+      4: 'Good',
+      5: 'Excellent!'
+    };
+    document.getElementById('ratingLabel').textContent = labels[currentRating] || 'Select a rating';
+  });
+});
+
+// ─── CHARACTER COUNT ───
+document.getElementById('reviewText').addEventListener('input', function() {
+  const count = this.value.length;
+  document.getElementById('charCount').textContent = `${count} / 1000 characters`;
+  if (count > 900) {
+    document.getElementById('charCount').style.color = 'var(--color-red)';
+  } else {
+    document.getElementById('charCount').style.color = 'var(--color-ivory-dim)';
+  }
+});
+
+// ─── PHOTO UPLOAD ───
+function handlePhotoUpload(event) {
+  const files = event.target.files;
+  const previewContainer = document.getElementById('photoPreview');
+
+  for (const file of files) {
+    if (uploadedPhotos.length >= 5) {
+      showToast('Maximum 5 photos allowed', true);
+      break;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      uploadedPhotos.push({ file, data: e.target.result });
+      const div = document.createElement('div');
+      div.className = 'preview-item';
+      div.innerHTML = `
+        <img src="${e.target.result}" alt="Uploaded photo">
+        <button class="remove-photo" onclick="removePhoto(${uploadedPhotos.length - 1})">✕</button>
+      `;
+      previewContainer.appendChild(div);
+    };
+    reader.readAsDataURL(file);
+  }
+  event.target.value = '';
+}
+
+function removePhoto(index) {
+  uploadedPhotos.splice(index, 1);
+  renderPhotoPreviews();
+}
+
+function renderPhotoPreviews() {
+  const container = document.getElementById('photoPreview');
+  container.innerHTML = '';
+  uploadedPhotos.forEach((photo, index) => {
+    const div = document.createElement('div');
+    div.className = 'preview-item';
+    div.innerHTML = `
+      <img src="${photo.data}" alt="Uploaded photo">
+      <button class="remove-photo" onclick="removePhoto(${index})">✕</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ─── SUBMIT REVIEW ───
+function submitReview() {
+  const name = document.getElementById('reviewName').value.trim();
+  const email = document.getElementById('reviewEmail').value.trim();
+  const title = document.getElementById('reviewTitle').value.trim();
+  const text = document.getElementById('reviewText').value.trim();
+  const isAnonymous = document.getElementById('reviewAnonymous').checked;
+  const consent = document.getElementById('reviewConsent').checked;
+  const submitBtn = document.getElementById('submitReviewBtn');
+
+  // Validation
+  if (currentRating === 0) {
+    showToast('Please select a rating', true);
+    return;
+  }
+
+  if (!name) {
+    showToast('Please enter your name', true);
+    document.getElementById('reviewName').focus();
+    return;
+  }
+
+  if (!email) {
+    showToast('Please enter your email', true);
+    document.getElementById('reviewEmail').focus();
+    return;
+  }
+
+  if (!email.includes('@')) {
+    showToast('Please enter a valid email address', true);
+    document.getElementById('reviewEmail').focus();
+    return;
+  }
+
+  if (!title) {
+    showToast('Please enter a review title', true);
+    document.getElementById('reviewTitle').focus();
+    return;
+  }
+
+  if (!text) {
+    showToast('Please write your review', true);
+    document.getElementById('reviewText').focus();
+    return;
+  }
+
+  if (text.length < 20) {
+    showToast('Review must be at least 20 characters', true);
+    document.getElementById('reviewText').focus();
+    return;
+  }
+
+  if (!consent) {
+    showToast('Please confirm your review is based on genuine experience', true);
+    return;
+  }
+
+  // Build review data
+  const reviewData = {
+    productId: selectedProduct.id,
+    productName: selectedProduct.name,
+    rating: currentRating,
+    name: isAnonymous ? 'Anonymous' : name,
+    email: email,
+    title: title,
+    text: text,
+    photos: uploadedPhotos.map(p => p.data), // In production, upload to server
+    isAnonymous: isAnonymous,
+    date: new Date().toISOString()
+  };
+
+  // Disable submit button
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Submitting...';
+
+  // Simulate API call
+  console.log('Review submitted:', reviewData);
+
+  setTimeout(() => {
+    // Show success
+    document.getElementById('reviewFormContainer').style.display = 'none';
+    document.getElementById('reviewSuccess').style.display = 'block';
+    submitBtn.textContent = 'Submit review';
+    submitBtn.disabled = false;
+
+    // In production: POST to /api/reviews
+    showToast('Review submitted successfully!');
+
+    // Reset after 5 seconds (user can click "Done" to close)
+  }, 1500);
+}
+
+// ─── KEYBOARD SHORTCUTS ───
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const overlay = document.getElementById('reviewOverlay');
+    if (overlay.classList.contains('open')) {
+      closeReviewPopup();
+    }
+  }
+});
+
+// ─── INIT ───
+document.addEventListener('DOMContentLoaded', () => {
+  // Pre-fill demo name from localStorage
+  try {
+    const saved = localStorage.getItem('userProfile');
+    if (saved) {
+      const user = JSON.parse(saved);
+      if (user.name) document.getElementById('reviewName').value = user.name;
+      if (user.email) document.getElementById('reviewEmail').value = user.email;
+    }
+  } catch (e) {}
+});
+</script>
+</body>
+</html>

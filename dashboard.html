@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GraphicyCafe — Multi-Client Manager</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --color-bg: #17140F;
+  --color-surface: #211C15;
+  --color-surface-raised: #2B2419;
+  --color-ivory: #F3ECDD;
+  --color-ivory-dim: #C9BFA9;
+  --color-amber: #E3A63D;
+  --color-amber-dim: #B9822B;
+  --color-ember: #C2542A;
+  --color-green: #7CB77B;
+  --color-red: #D4685C;
+  --color-blue: #4A9AE6;
+  --color-purple: #9B6FE8;
+  --color-line: rgba(243, 236, 221, 0.12);
+  --color-line-strong: rgba(243, 236, 221, 0.22);
+
+  --font-display: 'Fraunces', 'Georgia', serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SFMono-Regular', monospace;
+
+  --radius-lg: 20px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ivory);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+img { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font-family: inherit; }
+input, select, textarea { cursor: auto; }
+
+:focus-visible {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 2px;
+}
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--color-amber);
+  color: #211405;
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 14px;
+  z-index: 200;
+  animation: fadeInUp 0.3s ease;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── HEADER ─── */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--color-line);
+  position: sticky;
+  top: 0;
+  background: rgba(23, 20, 15, 0.95);
+  backdrop-filter: blur(8px);
+  z-index: 30;
+}
+
+.back-link {
+  color: var(--color-ivory);
+  text-decoration: none;
+  font-size: 20px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--color-line-strong);
+}
+.back-link:hover {
+  border-color: var(--color-amber);
+  color: var(--color-amber);
+}
+
+.site-mark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--color-line-strong);
+  background: transparent;
+  color: var(--color-ivory);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  position: relative;
+}
+.icon-btn:hover { border-color: var(--color-amber); }
+.icon-btn .badge-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-red);
+}
+
+/* ─── BREADCRUMB ─── */
+.breadcrumb {
+  padding: 16px 24px 0;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-size: 13px;
+  color: var(--color-ivory-dim);
+}
+.breadcrumb a { color: var(--color-ivory-dim); }
+.breadcrumb a:hover { color: var(--color-amber); }
+.breadcrumb .sep { margin: 0 8px; }
+
+/* ─── PAGE HEADER ─── */
+.page-header {
+  max-width: 1400px;
+  margin: 16px auto 0;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.page-header h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0;
+}
+.page-header .subtitle {
+  font-size: 14px;
+  color: var(--color-ivory-dim);
+}
+.page-header .actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.page-header .actions button {
+  background: transparent;
+  border: 1px solid var(--color-line-strong);
+  color: var(--color-ivory-dim);
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.page-header .actions button:hover {
+  border-color: var(--color-amber);
+  color: var(--color-amber);
+}
+.page-header .actions button.primary {
+  background: var(--color-amber);
+  color: #211405;
+  border-color: var(--color-amber);
+  font-weight: 600;
+}
+.page-header .actions button.primary:hover {
+  background: var(--color-amber-dim);
+}
+
+/* ─── STATS ROW ─── */
+.stats-row {
+  max-width: 1400px;
+  margin: 20px auto 0;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+.stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  transition: border-color 0.15s ease;
+}
+.stat-card:hover {
+  border-color: var(--color-line-strong);
+}
+.stat-card .stat-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+.stat-card .stat-value {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-amber);
+  line-height: 1.1;
+}
+.stat-card .stat-label {
+  font-size: 13px;
+  color: var(--color-ivory-dim);
+  margin-top: 4px;
+}
+.stat-card .stat-change {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 6px;
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+.stat-card .stat-change.up {
+  color: var(--color-green);
+  background: rgba(124, 183, 123, 0.15);
+}
+.stat-card .stat-change.down {
+  color: var(--color-red);
+  background: rgba(212, 104, 92, 0.15);
+}
+.stat-card .stat-change.neutral {
+  color: var(--color-ivory-dim);
+  background: rgba(201, 191, 169, 0.1);
+}
+
+/* ─── FILTERS BAR ─── */
+.filters-bar {
+  max-width: 1400px;
+  margin: 16px auto 0;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.filters-bar .search-field {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+.filters-bar .search-field input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--color-ivory);
+  font-size: 14px;
+}
+.filters-bar .search-field input::placeholder {
+  color: var(--color-ivory-dim);
+  opacity: 0.6;
+}
+.filters-bar .search-field .search-icon {
+  color: var(--color-ivory-dim);
+}
+.filters-bar select {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  color: var(--color-ivory);
+  font-size: 13px;
+  min-width: 140px;
+}
+
+/* ─── CLIENTS GRID ─── */
+.clients-container {
+  max-width: 1400px;
+  margin: 20px auto 48px;
+  padding: 0 24px;
+}
+
+.clients-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.client-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+.client-card:hover {
+  border-color: var(--color-amber-dim);
+  transform: translateY(-2px);
+}
+
+.client-card-header {
+  padding: 18px 20px 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--color-line);
+}
+.client-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--font-display);
+  flex-shrink: 0;
+}
+.client-avatar.color-1 { background: #E3A63D; color: #211405; }
+.client-avatar.color-2 { background: #C2542A; color: #fff; }
+.client-avatar.color-3 { background: #4A9AE6; color: #fff; }
+.client-avatar.color-4 { background: #9B6FE8; color: #fff; }
+.client-avatar.color-5 { background: #7CB77B; color: #211405; }
+.client-avatar.color-6 { background: #D4685C; color: #fff; }
+.client-avatar.color-7 { background: #F3ECDD; color: #17140F; }
+.client-avatar.color-8 { background: #B9822B; color: #fff; }
+
+.client-info {
+  flex: 1;
+}
+.client-name {
+  font-weight: 600;
+  font-size: 16px;
+}
+.client-domain {
+  font-size: 12px;
+  color: var(--color-ivory-dim);
+  font-family: var(--font-mono);
+}
+.client-status {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.client-status.active {
+  background: rgba(124, 183, 123, 0.2);
+  color: var(--color-green);
+}
+.client-status.inactive {
+  background: rgba(201, 191, 169, 0.15);
+  color: var(--color-ivory-dim);
+}
+.client-status.suspended {
+  background: rgba(212, 104, 92, 0.2);
+  color: var(--color-red);
+}
+
+.client-card-body {
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+.client-stat {
+  text-align: center;
+}
+.client-stat .value {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--color-amber);
+}
+.client-stat .label {
+  font-size: 11px;
+  color: var(--color-ivory-dim);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.client-card-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--color-line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--color-ivory-dim);
+}
+.client-card-footer .view-details {
+  color: var(--color-amber);
+  font-weight: 500;
+}
+.client-card-footer .view-details:hover {
+  text-decoration: underline;
+}
+
+/* ─── CLIENT DETAIL MODAL ─── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-backdrop.open {
+  display: flex;
+}
+.modal {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal .modal-close {
+  float: right;
+  background: none;
+  border: none;
+  color: var(--color-ivory-dim);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.modal .modal-close:hover {
+  color: var(--color-ivory);
+}
+.modal h3 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+.modal .modal-sub {
+  font-size: 13px;
+  color: var(--color-ivory-dim);
+  margin: 0 0 20px;
+}
+
+/* Client Detail Grid */
+.client-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.client-detail-item {
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+}
+.client-detail-item .label {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-ivory-dim);
+}
+.client-detail-item .value {
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+.client-detail-item .value .highlight {
+  color: var(--color-amber);
+}
+
+/* Store Performance */
+.store-performance {
+  margin: 20px 0;
+}
+.store-performance h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+  margin: 0 0 12px;
+}
+.performance-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.perf-item {
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  text-align: center;
+}
+.perf-item .value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-amber);
+}
+.perf-item .label {
+  font-size: 11px;
+  color: var(--color-ivory-dim);
+  font-family: var(--font-mono);
+}
+
+/* Model List */
+.model-list {
+  margin: 16px 0;
+}
+.model-list h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+  margin: 0 0 10px;
+}
+.model-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  padding: 4px 14px 4px 10px;
+  font-size: 12px;
+  margin: 0 4px 6px 0;
+}
+.model-tag .status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.model-tag .status-dot.live {
+  background: var(--color-green);
+}
+.model-tag .status-dot.draft {
+  background: var(--color-ivory-dim);
+}
+.model-tag .status-dot.archived {
+  background: var(--color-red);
+}
+
+/* Recent Orders */
+.recent-orders {
+  margin: 16px 0;
+}
+.recent-orders h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+  margin: 0 0 10px;
+}
+.recent-orders table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.recent-orders th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-ivory-dim);
+  font-weight: 400;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-line);
+}
+.recent-orders td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-ivory-dim);
+}
+.recent-orders td .amount {
+  color: var(--color-amber);
+  font-weight: 600;
+}
+
+/* ─── EMPTY STATE ─── */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-ivory-dim);
+}
+.empty-state .icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+.empty-state h3 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  margin: 0 0 8px;
+  color: var(--color-ivory);
+}
+.empty-state p {
+  font-size: 14px;
+  margin: 0 0 20px;
+}
+
+/* ─── LOADING ─── */
+.loading-placeholder {
+  color: var(--color-ivory-dim);
+  text-align: center;
+  padding: 60px 20px;
+  font-size: 14px;
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1100px) {
+  .stats-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 860px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .clients-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .client-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .performance-grid {
+    grid-template-columns: 1fr;
+  }
+  .filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 560px) {
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+  .clients-grid {
+    grid-template-columns: 1fr;
+  }
+  .modal { padding: 20px; }
+  .client-card-body {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast" id="toast" style="display:none;"></div>
+
+<!-- ═══ HEADER ═══ -->
+<header class="site-header">
+  <a href="admin.html" class="back-link" aria-label="Back to admin">&larr;</a>
+  <span class="site-mark">GraphicyCafe</span>
+  <div class="header-actions">
+    <button class="icon-btn" aria-label="Notifications">🔔<span class="badge-dot"></span></button>
+    <button class="icon-btn" aria-label="Profile" onclick="window.location.href='profile.html'">◐</button>
+  </div>
+</header>
+
+<!-- ═══ BREADCRUMB ═══ -->
+<div class="breadcrumb">
+  <a href="admin.html">Dashboard</a><span class="sep">/</span>
+  <span>Multi-Client Manager</span>
+</div>
+
+<!-- ═══ PAGE HEADER ═══ -->
+<div class="page-header">
+  <div>
+    <h1>Client Manager</h1>
+    <span class="subtitle" id="clientCount">Loading clients...</span>
+  </div>
+  <div class="actions">
+    <button onclick="refreshData()">🔄 Refresh</button>
+    <button onclick="exportReport()">📥 Export report</button>
+    <button class="primary" onclick="openAddClientModal()">+ Add client</button>
+  </div>
+</div>
+
+<!-- ═══ STATS ROW ═══ -->
+<div class="stats-row" id="statsRow">
+  <div class="stat-card">
+    <div class="stat-icon">🏢</div>
+    <div class="stat-value" id="statClients">0</div>
+    <div class="stat-label">Total Clients</div>
+    <span class="stat-change up" id="statClientsChange">+0%</span>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">📦</div>
+    <div class="stat-value" id="statModels">0</div>
+    <div class="stat-label">Total Models Uploaded</div>
+    <span class="stat-change up" id="statModelsChange">+0%</span>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">🟢</div>
+    <div class="stat-value" id="statLiveModels">0</div>
+    <div class="stat-label">Models Live</div>
+    <span class="stat-change neutral">● All active</span>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">💰</div>
+    <div class="stat-value" id="statRevenue">$0</div>
+    <div class="stat-label">Total Revenue (All Clients)</div>
+    <span class="stat-change up" id="statRevenueChange">+0%</span>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">📈</div>
+    <div class="stat-value" id="statOrders">0</div>
+    <div class="stat-label">Total Orders</div>
+    <span class="stat-change up" id="statOrdersChange">+0%</span>
+  </div>
+</div>
+
+<!-- ═══ FILTERS ═══ -->
+<div class="filters-bar">
+  <div class="search-field">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="searchInput" placeholder="Search by client name, domain, email..." oninput="applyFilters()">
+  </div>
+  <select id="statusFilter" onchange="applyFilters()">
+    <option value="all">All statuses</option>
+    <option value="active">Active</option>
+    <option value="inactive">Inactive</option>
+    <option value="suspended">Suspended</option>
+  </select>
+  <select id="sortFilter" onchange="applyFilters()">
+    <option value="name">Sort: Name</option>
+    <option value="revenue">Sort: Revenue</option>
+    <option value="models">Sort: Models</option>
+    <option value="orders">Sort: Orders</option>
+  </select>
+  <button class="clear-btn" onclick="clearFilters()" style="background:transparent;border:none;color:var(--color-ivory-dim);font-size:13px;cursor:pointer;padding:8px 12px;">Clear filters</button>
+</div>
+
+<!-- ═══ CLIENTS GRID ═══ -->
+<div class="clients-container">
+  <div class="clients-grid" id="clientsGrid">
+    <div class="loading-placeholder" style="grid-column:1/-1;">Loading clients...</div>
+  </div>
+</div>
+
+<!-- ═══ CLIENT DETAIL MODAL ═══ -->
+<div class="modal-backdrop" id="clientDetailModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3 id="detailClientName">Client Name</h3>
+    <p class="modal-sub" id="detailClientDomain">domain.com</p>
+
+    <div class="client-detail-grid">
+      <div class="client-detail-item">
+        <div class="label">Client ID</div>
+        <div class="value" id="detailClientId">—</div>
+      </div>
+      <div class="client-detail-item">
+        <div class="label">Status</div>
+        <div class="value" id="detailClientStatus">—</div>
+      </div>
+      <div class="client-detail-item">
+        <div class="label">Email</div>
+        <div class="value" id="detailClientEmail">—</div>
+      </div>
+      <div class="client-detail-item">
+        <div class="label">Joined</div>
+        <div class="value" id="detailClientJoined">—</div>
+      </div>
+      <div class="client-detail-item" style="grid-column: span 2;">
+        <div class="label">Plan / Tier</div>
+        <div class="value" id="detailClientPlan">—</div>
+      </div>
+    </div>
+
+    <!-- Store Performance -->
+    <div class="store-performance">
+      <h4>📊 Store Performance</h4>
+      <div class="performance-grid">
+        <div class="perf-item">
+          <div class="value" id="detailRevenue">$0</div>
+          <div class="label">Revenue</div>
+        </div>
+        <div class="perf-item">
+          <div class="value" id="detailOrders">0</div>
+          <div class="label">Orders</div>
+        </div>
+        <div class="perf-item">
+          <div class="value" id="detailAvgOrder">$0</div>
+          <div class="label">Avg. Order Value</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Models -->
+    <div class="model-list">
+      <h4>📦 3D Models</h4>
+      <div id="detailModels">
+        <span style="color:var(--color-ivory-dim);font-size:13px;">Loading models...</span>
+      </div>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="recent-orders">
+      <h4>📋 Recent Orders</h4>
+      <div id="detailRecentOrders">
+        <span style="color:var(--color-ivory-dim);font-size:13px;">Loading orders...</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+      <button class="btn-primary" style="background:var(--color-amber);color:#211405;border:none;padding:10px 20px;border-radius:var(--radius-sm);font-weight:600;cursor:pointer;" onclick="openAdminForClient()">🔑 Access store admin</button>
+      <button class="btn-outline" style="background:transparent;border:1px solid var(--color-line-strong);color:var(--color-ivory-dim);padding:10px 20px;border-radius:var(--radius-sm);cursor:pointer;" onclick="viewAnalytics()">📊 View analytics</button>
+      <button class="btn-outline" style="background:transparent;border:1px solid var(--color-line-strong);color:var(--color-ivory-dim);padding:10px 20px;border-radius:var(--radius-sm);cursor:pointer;" onclick="sendClientEmail()">✉️ Email client</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ───
+const API_BASE = '';
+
+// ─── STATE ───
+let clients = [];
+let filteredClients = [];
+let selectedClientId = null;
+
+// ─── HELPERS ───
+function showToast(msg, isError = false) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.style.display = 'block';
+  toast.style.background = isError ? 'var(--color-red)' : 'var(--color-amber)';
+  toast.style.color = isError ? '#fff' : '#211405';
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => {
+    toast.style.display = 'none';
+  }, 3000);
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatCurrency(amount) {
+  return '$' + Number(amount).toFixed(2);
+}
+
+function getAvatarColor(index) {
+  const colors = ['color-1', 'color-2', 'color-3', 'color-4', 'color-5', 'color-6', 'color-7', 'color-8'];
+  return colors[index % colors.length];
+}
+
+function getInitials(name) {
+  if (!name) return '?';
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function getStatusLabel(status) {
+  const labels = {
+    active: 'Active',
+    inactive: 'Inactive',
+    suspended: 'Suspended'
+  };
+  return labels[status] || status;
+}
+
+function closeModal() {
+  document.getElementById('clientDetailModal').classList.remove('open');
+}
+
+function openModal() {
+  document.getElementById('clientDetailModal').classList.add('open');
+}
+
+// ─── GENERATE DEMO CLIENTS ───
+function generateDemoClients() {
+  const clientNames = [
+    'Ember Room',
+    'The Rustic Table',
+    'Smoke & Fire Bistro',
+    'Charcoal Kitchen',
+    'Flame & Forge',
+    'Oak & Ember',
+    'Wildfire Grill',
+    'The Cedar Room',
+    'Pitmaster\'s Table',
+    'Ash & Oak'
+  ];
+
+  const domains = [
+    'emberroom.com',
+    'rustictable.com',
+    'smokefirebistro.com',
+    'charcoalkitchen.com',
+    'flameandforge.com',
+    'oakandember.com',
+    'wildfiregrill.com',
+    'cedarroom.com',
+    'pitmasterstable.com',
+    'ashandoak.com'
+  ];
+
+  const plans = ['Basic', 'Standard', 'Pro', 'Enterprise'];
+  const statuses = ['active', 'active', 'active', 'active', 'inactive', 'active', 'active', 'suspended', 'active', 'active'];
+
+  const now = new Date();
+
+  return clientNames.map((name, index) => {
+    const numModels = Math.floor(Math.random() * 15) + 3;
+    const liveModels = Math.floor(Math.random() * numModels * 0.7) + 1;
+    const totalOrders = Math.floor(Math.random() * 500) + 20;
+    const revenue = (Math.random() * 45000) + 5000;
+
+    const orderDates = [];
+    for (let i = 0; i < Math.min(totalOrders, 10); i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (i * 3) - Math.floor(Math.random() * 5));
+      orderDates.push({
+        id: `ORD-${String(i + 1).padStart(3, '0')}`,
+        total: (Math.random() * 80) + 15,
+        date: d.toISOString()
+      });
+    }
+    orderDates.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // Generate model names
+    const modelNames = ['cake', 'salmon', 'short-rib', 'chicken', 'eggplant', 'tart', 'burger', 'steak', 'lobster', 'pasta', 'pizza', 'sushi', 'ramen', 'curry', 'taco'];
+    const models = [];
+    for (let i = 0; i < numModels; i++) {
+      const isLive = i < liveModels;
+      models.push({
+        name: modelNames[i % modelNames.length] + (i > modelNames.length ? `-${i}` : '') + '.glb',
+        status: isLive ? 'live' : (Math.random() > 0.5 ? 'draft' : 'archived'),
+        uploaded: new Date(now.getTime() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
+      });
+    }
+
+    const joined = new Date(now);
+    joined.setMonth(joined.getMonth() - (Math.random() * 18 + 2));
+
+    return {
+      id: `client-${String(index + 1).padStart(3, '0')}`,
+      name: name,
+      domain: domains[index],
+      email: `info@${domains[index]}`,
+      status: statuses[index],
+      plan: plans[index % plans.length],
+      joined: joined.toISOString(),
+      revenue: revenue,
+      orders: totalOrders,
+      avgOrder: totalOrders > 0 ? revenue / totalOrders : 0,
+      models: models,
+      liveModels: liveModels,
+      totalModels: numModels,
+      recentOrders: orderDates.slice(0, 5)
+    };
+  });
+}
+
+// ─── LOAD CLIENTS ───
+function loadClients() {
+  try {
+    // In production: fetch('/api/admin/clients')
+    clients = generateDemoClients();
+    filteredClients = [...clients];
+    updateStats();
+    renderClients();
+    document.getElementById('clientCount').textContent = `${clients.length} clients`;
+  } catch (err) {
+    console.error('Failed to load clients:', err);
+    document.getElementById('clientsGrid').innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1;">
+        <div class="icon">⚠️</div>
+        <h3>Failed to load clients</h3>
+        <p>Please try again later.</p>
+      </div>
+    `;
+  }
+}
+
+// ─── UPDATE STATS ───
+function updateStats() {
+  const totalClients = clients.length;
+  const totalModels = clients.reduce((sum, c) => sum + (c.totalModels || 0), 0);
+  const totalLive = clients.reduce((sum, c) => sum + (c.liveModels || 0), 0);
+  const totalRevenue = clients.reduce((sum, c) => sum + (c.revenue || 0), 0);
+  const totalOrders = clients.reduce((sum, c) => sum + (c.orders || 0), 0);
+
+  document.getElementById('statClients').textContent = totalClients;
+  document.getElementById('statModels').textContent = totalModels;
+  document.getElementById('statLiveModels').textContent = totalLive;
+  document.getElementById('statRevenue').textContent = formatCurrency(totalRevenue);
+  document.getElementById('statOrders').textContent = totalOrders;
+
+  // Generate random change percentages for demo
+  document.getElementById('statClientsChange').textContent = `+${Math.floor(Math.random() * 12) + 3}%`;
+  document.getElementById('statModelsChange').textContent = `+${Math.floor(Math.random() * 15) + 5}%`;
+  document.getElementById('statRevenueChange').textContent = `+${Math.floor(Math.random() * 20) + 8}%`;
+  document.getElementById('statOrdersChange').textContent = `+${Math.floor(Math.random() * 15) + 4}%`;
+}
+
+// ─── RENDER CLIENTS ───
+function renderClients() {
+  const grid = document.getElementById('clientsGrid');
+
+  if (filteredClients.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1;">
+        <div class="icon">🔍</div>
+        <h3>No clients found</h3>
+        <p>Try adjusting your filters or add a new client.</p>
+        <button class="btn-primary" onclick="openAddClientModal()" style="background:var(--color-amber);color:#211405;border:none;padding:12px 28px;border-radius:var(--radius-sm);font-weight:600;cursor:pointer;">+ Add client</button>
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = filteredClients.map((client, index) => `
+    <div class="client-card" onclick="viewClient('${client.id}')">
+      <div class="client-card-header">
+        <div class="client-avatar ${getAvatarColor(index)}">${getInitials(client.name)}</div>
+        <div class="client-info">
+          <div class="client-name">${client.name}</div>
+          <div class="client-domain">${client.domain}</div>
+        </div>
+        <span class="client-status ${client.status}">${getStatusLabel(client.status)}</span>
+      </div>
+      <div class="client-card-body">
+        <div class="client-stat">
+          <div class="value">${client.liveModels || 0}</div>
+          <div class="label">Models Live</div>
+        </div>
+        <div class="client-stat">
+          <div class="value">${formatCurrency(client.revenue || 0)}</div>
+          <div class="label">Revenue</div>
+        </div>
+        <div class="client-stat">
+          <div class="value">${client.orders || 0}</div>
+          <div class="label">Orders</div>
+        </div>
+      </div>
+      <div class="client-card-footer">
+        <span>Joined ${formatDate(client.joined)}</span>
+        <span class="view-details">View details →</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── VIEW CLIENT DETAIL ───
+function viewClient(clientId) {
+  const client = clients.find(c => c.id === clientId);
+  if (!client) {
+    showToast('Client not found', true);
+    return;
+  }
+
+  selectedClientId = clientId;
+
+  document.getElementById('detailClientName').textContent = client.name;
+  document.getElementById('detailClientDomain').textContent = client.domain;
+  document.getElementById('detailClientId').textContent = client.id;
+  document.getElementById('detailClientEmail').textContent = client.email || '—';
+  document.getElementById('detailClientJoined').textContent = formatDate(client.joined);
+  document.getElementById('detailClientPlan').textContent = `${client.plan} Plan`;
+
+  const statusEl = document.getElementById('detailClientStatus');
+  statusEl.innerHTML = `<span class="client-status ${client.status}">${getStatusLabel(client.status)}</span>`;
+
+  document.getElementById('detailRevenue').textContent = formatCurrency(client.revenue || 0);
+  document.getElementById('detailOrders').textContent = client.orders || 0;
+  document.getElementById('detailAvgOrder').textContent = formatCurrency(client.avgOrder || 0);
+
+  // Models
+  const modelsContainer = document.getElementById('detailModels');
+  if (client.models && client.models.length > 0) {
+    modelsContainer.innerHTML = client.models.map(m => `
+      <span class="model-tag">
+        <span class="status-dot ${m.status}"></span>
+        ${m.name}
+        <span style="font-size:10px;color:var(--color-ivory-dim);">${m.status}</span>
+      </span>
+    `).join('') + `
+      <span style="font-size:12px;color:var(--color-ivory-dim);margin-left:8px;">
+        (${client.liveModels} live / ${client.totalModels} total)
+      </span>
+    `;
+  } else {
+    modelsContainer.innerHTML = '<span style="color:var(--color-ivory-dim);font-size:13px;">No models uploaded yet</span>';
+  }
+
+  // Recent Orders
+  const ordersContainer = document.getElementById('detailRecentOrders');
+  if (client.recentOrders && client.recentOrders.length > 0) {
+    ordersContainer.innerHTML = `
+      <table>
+        <thead><tr><th>Order ID</th><th>Date</th><th style="text-align:right;">Total</th></tr></thead>
+        <tbody>
+          ${client.recentOrders.map(o => `
+            <tr>
+              <td>${o.id}</td>
+              <td>${formatDate(o.date)}</td>
+              <td style="text-align:right;"><span class="amount">${formatCurrency(o.total)}</span></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } else {
+    ordersContainer.innerHTML = '<span style="color:var(--color-ivory-dim);font-size:13px;">No orders yet</span>';
+  }
+
+  openModal();
+}
+
+// ─── FILTERS ───
+function applyFilters() {
+  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+  const status = document.getElementById('statusFilter').value;
+  const sort = document.getElementById('sortFilter').value;
+
+  filteredClients = clients.filter(client => {
+    if (search) {
+      const match = client.name.toLowerCase().includes(search) ||
+                    client.domain.toLowerCase().includes(search) ||
+                    client.email.toLowerCase().includes(search);
+      if (!match) return false;
+    }
+    if (status !== 'all' && client.status !== status) return false;
+    return true;
+  });
+
+  // Sort
+  switch (sort) {
+    case 'name':
+      filteredClients.sort((a, b) => a.name.localeCompare(b.name));
+      break;
+    case 'revenue':
+      filteredClients.sort((a, b) => (b.revenue || 0) - (a.revenue || 0));
+      break;
+    case 'models':
+      filteredClients.sort((a, b) => (b.liveModels || 0) - (a.liveModels || 0));
+      break;
+    case 'orders':
+      filteredClients.sort((a, b) => (b.orders || 0) - (a.orders || 0));
+      break;
+    default:
+      break;
+  }
+
+  renderClients();
+  document.getElementById('clientCount').textContent = `${filteredClients.length} clients`;
+}
+
+function clearFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('statusFilter').value = 'all';
+  document.getElementById('sortFilter').value = 'name';
+  applyFilters();
+}
+
+// ─── ACTIONS ───
+function refreshData() {
+  showToast('Refreshing data...');
+  setTimeout(() => {
+    loadClients();
+    showToast('Data refreshed!');
+  }, 500);
+}
+
+function exportReport() {
+  const report = {
+    generated: new Date().toISOString(),
+    totalClients: clients.length,
+    totalRevenue: clients.reduce((sum, c) => sum + (c.revenue || 0), 0),
+    totalOrders: clients.reduce((sum, c) => sum + (c.orders || 0), 0),
+    totalModels: clients.reduce((sum, c) => sum + (c.totalModels || 0), 0),
+    clients: clients.map(c => ({
+      name: c.name,
+      domain: c.domain,
+      status: c.status,
+      plan: c.plan,
+      revenue: c.revenue,
+      orders: c.orders,
+      liveModels: c.liveModels,
+      totalModels: c.totalModels
+    }))
+  };
+
+  // Create JSON download
+  const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `client_report_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Report exported!');
+}
+
+function openAddClientModal() {
+  showToast('Add client form coming soon!');
+}
+
+function openAdminForClient() {
+  if (selectedClientId) {
+    showToast(`Opening admin for ${selectedClientId}...`);
+  }
+}
+
+function viewAnalytics() {
+  if (selectedClientId) {
+    showToast(`Loading analytics for ${selectedClientId}...`);
+  }
+}
+
+function sendClientEmail() {
+  if (selectedClientId) {
+    const client = clients.find(c => c.id === selectedClientId);
+    if (client) {
+      showToast(`Opening email to ${client.email}...`);
+    }
+  }
+}
+
+// ─── KEYBOARD SHORTCUTS ───
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeModal();
+  }
+});
+
+// Click outside modal to close
+document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+  backdrop.addEventListener('click', function(e) {
+    if (e.target === this) {
+      this.classList.remove('open');
+    }
+  });
+});
+
+// ─── INIT ───
+document.addEventListener('DOMContentLoaded', () => {
+  loadClients();
+});
+</script>
+</body>
+</html>

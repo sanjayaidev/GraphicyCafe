@@ -1,0 +1,3096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GraphicyCafe — Admin Dashboard</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ─── SITE EDITOR PREVIEW FIXES ─── */
+.preview-featured-box {
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-line);
+}
+
+.preview-featured-box .featured-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-ivory);
+  margin: 0 0 6px;
+}
+
+.preview-featured-box .featured-desc {
+  font-size: 12px; 	
+  color: var(--color-ivory-dim);
+  line-height: 1.6;
+  margin: 0 0 10px;
+}
+
+.preview-featured-box .featured-cta {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-amber);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.preview-featured-box .featured-cta:hover {
+  color: var(--color-amber-dim);
+}
+:root {
+  --color-bg: #17140F;
+  --color-surface: #211C15;
+  --color-surface-raised: #2B2419;
+  --color-ivory: #F3ECDD;
+  --color-ivory-dim: #C9BFA9;
+  --color-amber: #E3A63D;
+  --color-amber-dim: #B9822B;
+  --color-ember: #C2542A;
+  --color-line: rgba(243, 236, 221, 0.12);
+  --color-line-strong: rgba(243, 236, 221, 0.22);
+  --color-green: #7CB77B;
+  --color-red: #D4685C;
+
+  --font-display: 'Fraunces', 'Georgia', serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SFMono-Regular', monospace;
+  --radius-lg: 16px;
+  --radius-md: 10px;
+  --radius-sm: 7px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--color-bg);
+  color: var(--color-ivory);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+}
+img { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font-family: inherit; cursor: pointer; }
+input, select, textarea { cursor: auto; }
+
+/* ─── COLOR PICKER STYLES ─── */
+.color-swatch-row .color-picker {
+  width: 40px;
+  height: 40px;
+  padding: 2px;
+  border: 2px solid var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  cursor: pointer;
+}
+.color-swatch-row .color-picker::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+.color-swatch-row .color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+.color-swatch-row .color-picker:hover {
+  border-color: var(--color-amber);
+}
+
+/* ─── PREVIEW ISOLATION ─── */
+.preview-frame {
+  isolation: isolate;
+}
+.preview-frame * {
+  /* Inherit preview colors instead of admin colors */
+  color: var(--preview-ivory, #F3ECDD);
+}
+.preview-frame .preview-logo {
+  color: var(--preview-ivory, #F3ECDD);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+}
+.preview-frame .preview-hero-title {
+  color: var(--preview-ivory, #F3ECDD);
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+.preview-frame .eyebrow {
+  color: var(--preview-amber, #E3A63D);
+}
+.preview-frame .preview-header {
+  border-bottom: 1px solid var(--preview-line, rgba(243,236,221,0.12));
+}
+.preview-frame {
+  background: var(--preview-bg, #17140F);
+  color: var(--preview-ivory, #F3ECDD);
+  border-radius: var(--radius-md);
+  padding: 18px;
+}
+.preview-frame .preview-hero-sub {
+  color: var(--preview-ivory-dim, #C9BFA9);
+  font-size: 12px;
+}
+.preview-frame .preview-bg-box {
+  background: var(--preview-surface, #211C15);
+}
+
+/* ─── LOGIN OVERLAY ─── */
+#loginOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--color-bg);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+#loginOverlay.visible { display: flex; }
+#loginOverlay h1 {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  color: var(--color-amber);
+}
+#loginOverlay p {
+  color: var(--color-ivory-dim);
+  font-size: 0.95rem;
+}
+.login-box {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: 2rem;
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.login-box label {
+  font-size: 0.85rem;
+  color: var(--color-ivory-dim);
+}
+.login-box input {
+  background: var(--color-bg);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-ivory);
+  padding: 0.6rem 0.8rem;
+  outline: none;
+  width: 100%;
+  font-size: 0.95rem;
+}
+.login-box input:focus {
+  border-color: var(--color-amber);
+}
+.login-btn {
+  background: var(--color-amber);
+  color: #211405;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.7rem;
+  font-weight: 700;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+}
+.login-btn:hover {
+  background: var(--color-amber-dim);
+}
+#loginError {
+  color: var(--color-red);
+  font-size: 0.85rem;
+  min-height: 1.2em;
+}
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: var(--color-amber);
+  color: #211405;
+  padding: 0.7rem 1.2rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.9rem;
+  transform: translateY(80px);
+  opacity: 0;
+  transition: 0.3s;
+  z-index: 2000;
+}
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* ─── ADMIN SHELL ─── */
+.admin-shell { display: none; min-height: 100vh; }
+.admin-shell.visible { display: flex; }
+
+/* Sidebar */
+.admin-sidebar {
+  width: 232px;
+  flex-shrink: 0;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-line);
+  padding: 20px 14px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.admin-brand { font-family: var(--font-display); font-weight: 600; font-size: 17px; padding: 4px 10px 20px; }
+.admin-brand span { display: block; font-family: var(--font-mono); font-size: 10px; color: var(--color-ivory-dim); font-weight: 400; margin-top: 2px; }
+.nav-group-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-ivory-dim); padding: 14px 10px 6px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--color-ivory-dim);
+  font-size: 13px;
+  margin-bottom: 2px;
+  cursor: pointer;
+}
+.nav-item .nav-ic { width: 16px; text-align: center; font-size: 13px; }
+.nav-item:hover { background: var(--color-surface-raised); color: var(--color-ivory); }
+.nav-item.is-active { background: var(--color-surface-raised); color: var(--color-ivory); border-left: 2px solid var(--color-amber); }
+
+/* Main */
+.admin-main { flex: 1; min-width: 0; }
+.admin-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--color-line);
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(23,20,15,0.9);
+  backdrop-filter: blur(8px);
+}
+.topbar-title { font-family: var(--font-display); font-size: 20px; font-weight: 600; }
+.topbar-actions { display: flex; align-items: center; gap: 12px; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--color-ember); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+
+.btn {
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  padding: 9px 15px;
+  border: 1px solid var(--color-line-strong);
+  background: transparent;
+  color: var(--color-ivory);
+}
+.btn-primary { background: var(--color-amber); color: #211405; border-color: var(--color-amber); font-weight: 600; }
+.btn-sm { padding: 6px 11px; font-size: 12px; }
+.btn-danger-ghost { color: var(--color-red); border-color: rgba(212,104,92,0.4); }
+.btn-success { background: var(--color-green); color: #211405; border-color: var(--color-green); font-weight: 600; }
+
+.admin-content { padding: 24px 28px 60px; }
+.panel-view { display: none; }
+.panel-view.is-active { display: block; }
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-bottom: 18px;
+}
+.card-title { font-family: var(--font-display); font-size: 16px; margin: 0 0 4px; }
+.card-sub { font-size: 12px; color: var(--color-ivory-dim); margin: 0 0 16px; }
+.card-head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.field label { font-size: 12px; color: var(--color-ivory-dim); }
+.field input, .field textarea, .field select {
+  background: var(--color-bg);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--color-ivory);
+  font-size: 13px;
+}
+.field textarea { resize: vertical; min-height: 60px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.field-hint { font-size: 11px; color: var(--color-ivory-dim); }
+
+/* Stat grid */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+.stat-card { background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius-md); padding: 16px; }
+.stat-label { font-size: 12px; color: var(--color-ivory-dim); }
+.stat-value { font-family: var(--font-display); font-size: 24px; margin-top: 6px; }
+
+/* Dashboard quick links */
+.quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.quick-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: 18px;
+}
+.quick-card .nav-ic { font-size: 18px; color: var(--color-amber); }
+.quick-card-title { font-family: var(--font-display); font-size: 15px; margin: 10px 0 4px; }
+.quick-card-desc { font-size: 12px; color: var(--color-ivory-dim); line-height: 1.5; }
+
+/* Site editor: live preview split */
+.editor-split { display: grid; grid-template-columns: 360px 1fr; gap: 18px; align-items: start; }
+.live-preview {
+  background: var(--color-bg);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  position: sticky;
+  top: 84px;
+}
+.preview-badge { font-family: var(--font-mono); font-size: 10px; color: var(--color-ivory-dim); padding: 10px 14px; border-bottom: 1px solid var(--color-line); }
+.preview-frame { padding: 18px; }
+.preview-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--color-line); margin-bottom: 14px; }
+.preview-logo { font-family: var(--font-display); font-weight: 600; font-size: 16px; }
+.preview-hero-title { font-family: var(--font-display); font-size: 22px; font-weight: 600; margin: 0 0 6px; }
+.preview-hero-sub { font-size: 12px; color: var(--color-ivory-dim); }
+
+.logo-upload { display: flex; align-items: center; gap: 12px; }
+.logo-preview-box { width: 56px; height: 56px; border-radius: var(--radius-sm); background: var(--color-surface-raised); border: 1px dashed var(--color-line-strong); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--color-ivory-dim); text-align: center; }
+
+/* Theme colors */
+.color-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.color-field { display: flex; flex-direction: column; gap: 8px; }
+.color-field label { font-size: 12px; color: var(--color-ivory-dim); }
+.color-swatch-row { display: flex; align-items: center; gap: 10px; }
+.color-swatch { width: 34px; height: 34px; border-radius: var(--radius-sm); border: 1px solid var(--color-line-strong); }
+.color-field input[type="text"] { flex: 1; }
+
+.preset-row { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+.preset-swatch { width: 64px; height: 40px; border-radius: var(--radius-sm); border: 2px solid transparent; }
+.preset-swatch.is-active { border-color: var(--color-amber); }
+
+/* Products table */
+.table-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.search-mini { background: var(--color-bg); border: 1px solid var(--color-line-strong); border-radius: var(--radius-sm); padding: 9px 12px; font-size: 13px; color: var(--color-ivory); min-width: 220px; }
+
+table.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.admin-table th {
+  text-align: left; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--color-ivory-dim); font-weight: 400; padding: 10px 12px; border-bottom: 1px solid var(--color-line);
+}
+.admin-table td { padding: 12px; border-bottom: 1px solid var(--color-line); vertical-align: middle; }
+.admin-table tr:last-child td { border-bottom: none; }
+.row-product { display: flex; align-items: center; gap: 10px; }
+.row-product img { width: 38px; height: 38px; border-radius: 6px; object-fit: cover; }
+.row-product-name { font-weight: 500; }
+.row-product-cat { font-size: 11px; color: var(--color-ivory-dim); }
+
+.badge { font-size: 11px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--color-line-strong); display: inline-block; }
+.badge-success { color: var(--color-green); border-color: rgba(124,183,123,0.4); }
+.badge-warn { color: var(--color-amber); border-color: rgba(227,166,61,0.4); }
+.badge-danger { color: var(--color-red); border-color: rgba(212,104,92,0.4); }
+
+.toggle {
+  width: 34px; height: 19px; border-radius: 999px;
+  background: var(--color-line-strong);
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+.toggle.is-on { background: var(--color-amber); }
+.toggle::after { content:''; position:absolute; top:2px; left:2px; width:15px; height:15px; border-radius:50%; background: var(--color-ivory); transition: left 0.15s; }
+.toggle.is-on::after { left: 17px; background: #211405; }
+
+.row-actions { display: flex; gap: 6px; }
+.icon-action { width: 28px; height: 28px; border-radius: var(--radius-sm); border: 1px solid var(--color-line-strong); background: transparent; color: var(--color-ivory); font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.icon-action:hover { background: var(--color-surface-raised); }
+
+/* Featured sections manager */
+.featured-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px; margin-bottom: 8px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+}
+.drag-handle { color: var(--color-ivory-dim); cursor: grab; font-size: 14px; }
+.featured-row-title { font-weight: 500; flex: 1; }
+.featured-row-sub { font-size: 11px; color: var(--color-ivory-dim); }
+
+/* 3D model manager */
+.model-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.model-card { background: var(--color-surface-raised); border: 1px solid var(--color-line); border-radius: var(--radius-md); overflow: hidden; }
+.model-thumb { height: 100px; background: var(--color-bg); display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--color-ivory-dim); }
+.model-body { padding: 12px; }
+.model-name { font-size: 12px; font-weight: 500; margin-bottom: 2px; }
+.model-meta { font-size: 10px; color: var(--color-ivory-dim); font-family: var(--font-mono); }
+.upload-tile {
+  border: 1px dashed var(--color-line-strong);
+  border-radius: var(--radius-md);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 170px;
+  color: var(--color-ivory-dim);
+  font-size: 12px;
+  gap: 6px;
+  cursor: pointer;
+}
+.upload-tile:hover { border-color: var(--color-amber); }
+
+/* Users table roles */
+.role-select { background: var(--color-bg); border: 1px solid var(--color-line-strong); border-radius: var(--radius-sm); padding: 6px 10px; font-size: 12px; color: var(--color-ivory); }
+
+/* Modal */
+.modal-shell {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  max-width: 640px;
+  width: 95vw;
+  max-height: 90vh;
+  overflow: auto;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 999;
+}
+
+@media (max-width: 1100px) {
+  .editor-split { grid-template-columns: 1fr; }
+  .live-preview { position: static; }
+  .model-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat-grid, .quick-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 760px) {
+  .admin-sidebar { display: none; }
+  .field-row, .color-grid { grid-template-columns: 1fr; }
+}
+/* ─── PRESET SWATCHES WITH LABELS ─── */
+.preset-row {
+  display: flex;
+  gap: 20px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.preset-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  min-width: 70px;
+}
+
+.preset-swatch {
+  width: 64px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+
+.preset-swatch.is-active {
+  border-color: var(--color-amber);
+  transform: scale(1.05);
+}
+
+.preset-swatch:hover {
+  transform: scale(1.08);
+  border-color: var(--color-ivory-dim);
+}
+
+.preset-label {
+  font-size: 10px;
+  color: var(--color-ivory-dim);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN OVERLAY ═══ -->
+<div id="loginOverlay" class="visible">
+  <h1>GraphicyCafe</h1>
+  <p>Admin access — sign in to continue</p>
+  <div class="login-box">
+    <div>
+      <label for="loginEmail">Email</label>
+      <input type="email" id="loginEmail" placeholder="admin@graphicycafe.com" autocomplete="email" />
+    </div>
+    <div>
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+    <div id="loginError"></div>
+    <button class="login-btn" id="loginBtn" onclick="handleLogin()">Sign in</button>
+  </div>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══ ADMIN SHELL ═══ -->
+<div class="admin-shell" id="appShell">
+
+  <aside class="admin-sidebar">
+    <div class="admin-brand">GraphicyCafe<span>Admin panel</span></div>
+
+    <div class="nav-group-title">Overview</div>
+    <a class="nav-item is-active" data-panel="dashboard"><span class="nav-ic">▤</span> Dashboard</a>
+
+    <div class="nav-group-title">Content</div>
+    <a class="nav-item" data-panel="site-settings"><span class="nav-ic">⚙</span> Site settings</a>
+    <a class="nav-item" data-panel="live-editor"><span class="nav-ic">✎</span> Live editor</a>
+	<a class="nav-item" data-panel="hero-slider"><span class="nav-ic">◐</span> Hero Slider</a>
+    <a class="nav-item" data-panel="testimonials"><span class="nav-ic">❝</span> Testimonials</a>
+    <a class="nav-item" data-panel="theme"><span class="nav-ic">◐</span> Theme & colors</a>
+    <a class="nav-item" data-panel="featured"><span class="nav-ic">☆</span> Featured sections</a>
+
+    <div class="nav-group-title">Catalog</div>
+    <a class="nav-item" data-panel="products"><span class="nav-ic">▦</span> Products</a>
+    <a class="nav-item" data-panel="models"><span class="nav-ic">◆</span> 3D models</a>
+    <a class="nav-item" data-panel="categories"><span class="nav-ic">🏷️</span> Categories</a>
+
+    <div class="nav-group-title">People</div>
+    <a class="nav-item" data-panel="users"><span class="nav-ic">◎</span> Users & roles</a>
+
+    <div class="nav-group-title">Settings</div>
+    <a class="nav-item" data-panel="contact"><span class="nav-ic">☏</span> Contact details</a>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <span class="topbar-title" id="topbarTitle">Dashboard</span>
+      <div class="topbar-actions">
+        <button class="btn btn-sm" onclick="window.open('index.html','_blank')">View live site</button>
+        <button class="btn btn-sm btn-danger-ghost" onclick="handleLogout()">Sign out</button>
+        <div class="avatar">GC</div>
+      </div>
+    </div>
+
+    <div class="admin-content">
+
+      <!-- DASHBOARD -->
+      <div class="panel-view is-active" id="panel-dashboard">
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-label">Orders today</div><div class="stat-value" id="statOrders">—</div></div>
+          <div class="stat-card"><div class="stat-label">Revenue today</div><div class="stat-value" id="statRevenue">—</div></div>
+          <div class="stat-card"><div class="stat-label">Active products</div><div class="stat-value" id="statProducts">—</div></div>
+          <div class="stat-card"><div class="stat-label">Low stock</div><div class="stat-value" id="statLowStock" style="color:var(--color-amber);">—</div></div>
+        </div>
+        <div class="quick-grid">
+          <div class="quick-card"><div class="nav-ic">✎</div><div class="quick-card-title">Edit site content</div><div class="quick-card-desc">Update logo, name, and homepage text in real time.</div></div>
+          <div class="quick-card"><div class="nav-ic">▦</div><div class="quick-card-title">Manage products</div><div class="quick-card-desc">Add new dishes, update stock, assign categories.</div></div>
+          <div class="quick-card"><div class="nav-ic">◆</div><div class="quick-card-title">Upload a 3D model</div><div class="quick-card-desc">Attach a .glb/.usdz to any product for AR preview.</div></div>
+        </div>
+      </div>
+
+<!-- SITE EDITOR -->
+<!-- Hero Slide Modal -->
+<div class="modal-backdrop" id="slideModal" style="display:none;">
+  <div class="modal-shell" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;background:var(--color-surface);border:1px solid var(--color-line-strong);border-radius:var(--radius-lg);padding:24px;max-width:560px;width:95vw;max-height:90vh;overflow:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="margin:0;" id="slideModalTitle">Add Hero Slide</h3>
+      <button onclick="closeSlideModal()" style="background:none;border:none;color:var(--color-ivory-dim);font-size:24px;cursor:pointer;">×</button>
+    </div>
+    <form id="slideForm" onsubmit="saveSlide(event)">
+      <input type="hidden" id="slideId" value="">
+      
+      <div class="field">
+        <label>Slide Image</label>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <div style="width:80px;height:80px;border-radius:var(--radius-sm);background:var(--color-bg);border:1px dashed var(--color-line-strong);display:flex;align-items:center;justify-content:center;overflow:hidden;" id="slideImagePreview">
+            <span style="color:var(--color-ivory-dim);font-size:11px;">No image</span>
+          </div>
+          <button type="button" class="btn btn-sm" onclick="document.getElementById('slideImageInput').click()">Upload Image</button>
+          <input type="file" id="slideImageInput" accept="image/*" style="display:none" onchange="handleSlideImageUpload(event)">
+          <input type="text" id="slideImageUrl" placeholder="Or paste image URL" style="flex:1;min-width:150px;background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:8px 12px;color:var(--color-ivory);font-size:13px;">
+        </div>
+      </div>
+      
+      <div class="field">
+        <label>Eyebrow (optional)</label>
+        <input type="text" id="slideEyebrow" placeholder="e.g. Welcome" style="width:100%;background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:10px 12px;color:var(--color-ivory);font-size:13px;">
+      </div>
+      
+      <div class="field">
+        <label>Title <span style="color:var(--color-red);">*</span></label>
+        <input type="text" id="slideTitle" placeholder="e.g. Fire, smoke, and the dishes worth it" required style="width:100%;background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:10px 12px;color:var(--color-ivory);font-size:13px;">
+      </div>
+      
+      <div class="field">
+        <label>Subtitle</label>
+        <textarea id="slideSubtitle" placeholder="e.g. Cedar-charred mains and seasonal small plates..." style="width:100%;background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:10px 12px;color:var(--color-ivory);font-size:13px;resize:vertical;min-height:60px;"></textarea>
+      </div>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="field">
+          <label>CTA Text</label>
+          <input type="text" id="slideCtaText" placeholder="e.g. Order now →" style="width:100%;background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:10px 12px;color:var(--color-ivory);font-size:13px;">
+        </div>
+        <div class="field">
+          <label>CTA Link</label>
+          <input type="text" id="slideCtaLink" placeholder="e.g. #menu" style="width:100%;background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:10px 12px;color:var(--color-ivory);font-size:13px;">
+        </div>
+      </div>
+      
+      <div style="display:flex;gap:16px;align-items:center;margin-bottom:14px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--color-ivory-dim);cursor:pointer;">
+          <input type="checkbox" id="slideActive" checked> Active
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--color-ivory-dim);cursor:pointer;">
+          <input type="number" id="slideOrder" value="0" style="width:60px;background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:6px 8px;color:var(--color-ivory);font-size:13px;"> Display Order
+        </label>
+      </div>
+      
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button type="submit" class="btn btn-primary btn-sm" style="flex:1;">Save Slide</button>
+        <button type="button" class="btn btn-sm" onclick="closeSlideModal()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+      <!-- LIVE EDITOR -->
+      <div class="panel-view" id="panel-live-editor">
+        <div class="card" style="margin-bottom:16px;">
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between;">
+            <div>
+              <h3 class="card-title" style="margin-bottom:2px;">Live editor</h3>
+              <p class="card-sub" style="margin:0;">Edit the copy on any page, then check the real page on the right.</p>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <select id="liveEditorPageSelect" style="background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:8px 12px;color:var(--color-ivory);font-size:13px;">
+                <option value="index">Home</option>
+                <option value="global">Global (header/footer, all pages)</option>
+                <option value="products">Menu / Products listing</option>
+                <option value="product-details">Product details</option>
+                <option value="cart">Cart widget</option>
+                <option value="review">Review widget</option>
+                <option value="bot">AI assistant widget</option>
+              </select>
+              <button class="btn btn-sm" onclick="refreshLiveEditorPreview()">↻ Refresh preview</button>
+              <button class="btn btn-sm" onclick="openLiveEditorPreviewNewTab()">↗ Open live site</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:380px 1fr;gap:16px;align-items:start;">
+          <!-- Field form -->
+          <div class="card" style="max-height:75vh;overflow:auto;">
+            <p class="card-sub" style="margin-top:0;">Editing: <strong id="liveEditorPageLabel">Home</strong></p>
+            <div id="liveEditorFields">
+              <div style="text-align:center;color:var(--color-ivory-dim);padding:1rem;">Loading fields…</div>
+            </div>
+          </div>
+
+          <!-- Preview iframe -->
+          <div class="card" style="padding:0;overflow:hidden;">
+            <iframe id="liveEditorFrame" src="about:blank" style="width:100%;height:75vh;border:0;background:#fff;display:block;"></iframe>
+          </div>
+        </div>
+      </div>
+
+      <!-- SITE SETTINGS -->
+      <div class="panel-view" id="panel-site-settings">
+        <div class="card">
+          <h3 class="card-title">Site settings</h3>
+          <p class="card-sub">The name, tagline, and logo shown across the storefront (browser tab, header, footer).</p>
+          <div class="field-row">
+            <div class="field"><label>Site name</label><input type="text" id="site_name" placeholder="GraphicyCafe"></div>
+            <div class="field"><label>Tagline</label><input type="text" id="site_tagline" placeholder="Fresh brewed, 3D viewed"></div>
+          </div>
+          <div class="field">
+            <label>Logo</label>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <div style="width:60px;height:60px;border-radius:var(--radius-sm);background:var(--color-bg);border:1px dashed var(--color-line-strong);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;" id="site_logo_preview">
+                <span style="color:var(--color-ivory-dim);font-size:10px;">No logo</span>
+              </div>
+              <button type="button" class="btn btn-sm" onclick="document.getElementById('site_logo_file').click()">Upload</button>
+              <input type="file" id="site_logo_file" accept="image/*" style="display:none" onchange="handleSiteLogoUpload(event)">
+              <input type="text" id="site_logo_url" placeholder="Or paste image URL" oninput="updateSiteLogoPreview(this.value)" style="flex:1;min-width:180px;background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:8px 10px;color:var(--color-ivory);font-size:12px;">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveSiteSettingsPanel()">Save site settings</button>
+        </div>
+      </div>
+
+      <!-- TESTIMONIALS -->
+      <div class="panel-view" id="panel-testimonials">
+        <div class="card">
+          <div class="card-head-row">
+            <div>
+              <h3 class="card-title">Testimonials</h3>
+              <p class="card-sub">Shown in the "What people are saying" section on the homepage.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openAddTestimonialModal()">+ Add testimonial</button>
+          </div>
+          <div id="testimonialsContainer">
+            <div style="text-align:center;color:var(--color-ivory-dim);padding:1rem;">Loading testimonials...</div>
+          </div>
+        </div>
+      </div>
+      <!-- Testimonial Modal -->
+      <div class="modal-backdrop" id="testimonialModal" style="display:none;">
+        <div class="modal-shell" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;background:var(--color-surface);border:1px solid var(--color-line-strong);border-radius:var(--radius-lg);padding:24px;max-width:520px;width:95vw;max-height:90vh;overflow:auto;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="margin:0;" id="testimonialModalTitle">Add Testimonial</h3>
+            <button onclick="closeTestimonialModal()" style="background:none;border:none;color:var(--color-ivory-dim);font-size:24px;cursor:pointer;">×</button>
+          </div>
+          <form id="testimonialForm" onsubmit="saveTestimonial(event)">
+            <input type="hidden" id="testimonialId" value="">
+            <div class="field">
+              <label>Customer name <span style="color:var(--color-red);">*</span></label>
+              <input type="text" id="testimonialName" placeholder="e.g. Aisha K." required style="width:100%;background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:10px 12px;color:var(--color-ivory);font-size:13px;">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="field">
+                <label>Initials <span style="color:var(--color-ivory-dim);font-weight:400;">(auto if blank)</span></label>
+                <input type="text" id="testimonialInitials" maxlength="3" placeholder="AK" style="width:100%;background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:10px 12px;color:var(--color-ivory);font-size:13px;">
+              </div>
+              <div class="field">
+                <label>Role / tag</label>
+                <input type="text" id="testimonialRole" placeholder="e.g. Verified order" style="width:100%;background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:10px 12px;color:var(--color-ivory);font-size:13px;">
+              </div>
+            </div>
+            <div class="field">
+              <label>Quote <span style="color:var(--color-red);">*</span></label>
+              <textarea id="testimonialQuote" required placeholder="What the customer said..." style="width:100%;background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:10px 12px;color:var(--color-ivory);font-size:13px;resize:vertical;min-height:70px;"></textarea>
+            </div>
+            <div style="display:flex;gap:16px;align-items:center;margin-bottom:14px;">
+              <div class="field" style="margin:0;">
+                <label>Stars</label>
+                <select id="testimonialStars" style="background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:8px 10px;color:var(--color-ivory);font-size:13px;">
+                  <option value="5">★★★★★ (5)</option>
+                  <option value="4">★★★★☆ (4)</option>
+                  <option value="3">★★★☆☆ (3)</option>
+                  <option value="2">★★☆☆☆ (2)</option>
+                  <option value="1">★☆☆☆☆ (1)</option>
+                </select>
+              </div>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--color-ivory-dim);cursor:pointer;">
+                <input type="checkbox" id="testimonialVisible" checked> Visible
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--color-ivory-dim);cursor:pointer;">
+                <input type="number" id="testimonialOrder" value="0" style="width:60px;background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:6px 8px;color:var(--color-ivory);font-size:13px;"> Order
+              </label>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px;">
+              <button type="submit" class="btn btn-primary btn-sm" style="flex:1;">Save testimonial</button>
+              <button type="button" class="btn btn-sm" onclick="closeTestimonialModal()">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+<!-- HERO SLIDER -->
+<div class="panel-view" id="panel-hero-slider">
+  <div class="card">
+    <div class="card-head-row">
+      <div>
+        <h3 class="card-title">Hero Slides</h3>
+        <p class="card-sub">Manage slides shown on the homepage hero section.</p>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openAddSlideModal()">+ Add slide</button>
+    </div>
+    <div id="heroSlidesContainer">
+      <div style="text-align:center;color:var(--color-ivory-dim);padding:1rem;">Loading slides...</div>
+    </div>
+  </div>
+</div>
+      <!-- THEME -->
+      <div class="panel-view" id="panel-theme">
+        <div class="card">
+          <h3 class="card-title">Color theme</h3>
+          <p class="card-sub">Applies site-wide — header, buttons, accents, backgrounds.</p>
+          <div class="color-grid">
+            <div class="color-field">
+              <label>Background</label>
+              <div class="color-swatch-row">
+                <input type="color" class="color-picker" data-target="theme_bg" value="#17140F">
+                <span class="color-swatch" style="background:#17140F;"></span>
+                <input type="text" id="theme_bg" value="#17140F">
+              </div>
+            </div>
+            <div class="color-field">
+              <label>Surface</label>
+              <div class="color-swatch-row">
+                <input type="color" class="color-picker" data-target="theme_surface" value="#211C15">
+                <span class="color-swatch" style="background:#211C15;"></span>
+                <input type="text" id="theme_surface" value="#211C15">
+              </div>
+            </div>
+            <div class="color-field">
+              <label>Primary text</label>
+              <div class="color-swatch-row">
+                <input type="color" class="color-picker" data-target="theme_ivory" value="#F3ECDD">
+                <span class="color-swatch" style="background:#F3ECDD;"></span>
+                <input type="text" id="theme_ivory" value="#F3ECDD">
+              </div>
+            </div>
+            <div class="color-field">
+              <label>Accent (buttons/links)</label>
+              <div class="color-swatch-row">
+                <input type="color" class="color-picker" data-target="theme_amber" value="#E3A63D">
+                <span class="color-swatch" style="background:#E3A63D;"></span>
+                <input type="text" id="theme_amber" value="#E3A63D">
+              </div>
+            </div>
+            <div class="color-field">
+              <label>Secondary accent</label>
+              <div class="color-swatch-row">
+                <input type="color" class="color-picker" data-target="theme_ember" value="#C2542A">
+                <span class="color-swatch" style="background:#C2542A;"></span>
+                <input type="text" id="theme_ember" value="#C2542A">
+              </div>
+            </div>
+            <div class="color-field">
+              <label>Borders / lines</label>
+              <div class="color-swatch-row">
+                <input type="color" class="color-picker" data-target="theme_line" value="#4a453c">
+                <span class="color-swatch" style="background:#4a453c;"></span>
+                <input type="text" id="theme_line" value="rgba(243,236,221,0.12)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Presets</h3>
+          <p class="card-sub">Quick-apply a full palette, then fine-tune above.</p>
+          <div class="preset-row">
+  <div class="preset-item" data-preset="warm" onclick="applyPreset('warm')">
+    <span class="preset-swatch is-active" style="background:linear-gradient(90deg,#17140F 50%,#E3A63D 50%);"></span>
+    <span class="preset-label">Warm</span>
+  </div>
+  <div class="preset-item" data-preset="cool" onclick="applyPreset('cool')">
+    <span class="preset-swatch" style="background:linear-gradient(90deg,#0F1417 50%,#3D9AE3 50%);"></span>
+    <span class="preset-label">Cool</span>
+  </div>
+  <div class="preset-item" data-preset="dark" onclick="applyPreset('dark')">
+    <span class="preset-swatch" style="background:linear-gradient(90deg,#141017 50%,#A63DE3 50%);"></span>
+    <span class="preset-label">Dark</span>
+  </div>
+  <div class="preset-item" data-preset="light" onclick="applyPreset('light')">
+    <span class="preset-swatch" style="background:linear-gradient(90deg,#F4F1EA 50%,#C2542A 50%);"></span>
+    <span class="preset-label">Light</span>
+  </div>
+</div>
+          <button class="btn btn-primary btn-sm" style="margin-top:16px;" onclick="saveThemeSettings()">Apply theme</button>
+        </div>
+      </div>
+
+      <!-- FEATURED SECTIONS -->
+      <div class="panel-view" id="panel-featured">
+        <div class="card">
+          <div class="card-head-row">
+            <div>
+              <h3 class="card-title">Homepage sections</h3>
+              <p class="card-sub">Drag to reorder, toggle visibility per section.</p>
+            </div>
+            <button class="btn btn-sm" id="addSectionBtn" onclick="openAddSectionModal()">+ Add section</button>
+          </div>
+          <div id="featuredSectionsContainer">
+            <div style="text-align:center;color:var(--color-ivory-dim);padding:1rem;">Loading sections...</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Assign products to "Featured"</h3>
+          <p class="card-sub">Pick which products appear in the 3D gallery and Chef's picks.</p>
+          <table class="admin-table" id="featuredProductsTable">
+            <thead><tr><th>Product</th><th>3D gallery</th><th>Chef's picks</th><th>Best sellers</th></tr></thead>
+            <tbody id="featuredProductsBody">
+              <tr><td colspan="4" style="text-align:center;color:var(--color-ivory-dim);padding:1rem;">Loading products...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PRODUCTS -->
+      <div class="panel-view" id="panel-products">
+        <div class="card">
+          <div class="table-toolbar">
+            <input type="text" class="search-mini" id="productSearch" placeholder="Search products…" oninput="filterProducts()">
+            <div style="display:flex; gap:8px;">
+              <select class="role-select" id="categoryFilter" onchange="filterProducts()">
+                <option value="">All categories</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="openAddProductModal()">+ Add product</button>
+            </div>
+          </div>
+          <table class="admin-table">
+            <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>3D model</th><th>Status</th><th></th></tr></thead>
+            <tbody id="productsTableBody">
+              <tr><td colspan="7" style="text-align:center;color:var(--color-ivory-dim);padding:2rem;">Loading products…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CATEGORIES -->
+      <div class="panel-view" id="panel-categories">
+        <div class="card">
+          <div class="card-head-row">
+            <div><h3 class="card-title">Categories</h3><p class="card-sub">Manage product categories for your store.</p></div>
+            <button class="btn btn-primary btn-sm" onclick="openAddCategoryModal()">+ Add category</button>
+          </div>
+          <table class="admin-table">
+            <thead><tr><th>Name</th><th>Slug</th><th>Description</th><th>Display Order</th><th></th></tr></thead>
+            <tbody id="categoriesTableBody">
+              <tr><td colspan="5" style="text-align:center;color:var(--color-ivory-dim);padding:2rem;">Loading categories…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3D MODELS -->
+      <div class="panel-view" id="panel-models">
+        <div class="card">
+          <div class="card-head-row">
+            <div><h3 class="card-title">3D model library</h3><p class="card-sub">Add model URLs, assign to any product.</p></div>
+            <button class="btn btn-primary btn-sm" onclick="openAddModelModal()">+ Add model</button>
+          </div>
+          <div class="model-grid" id="modelGrid">
+            <div style="text-align:center;color:var(--color-ivory-dim);padding:2rem;grid-column:1/-1;">Loading models...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- USERS -->
+      <div class="panel-view" id="panel-users">
+        <div class="card">
+          <div class="card-head-row">
+            <div><h3 class="card-title">Users & roles</h3><p class="card-sub">Control who can access the admin panel and what they can do.</p></div>
+            <button class="btn btn-primary btn-sm" onclick="openInviteUserModal()">+ Invite user</button>
+          </div>
+          <table class="admin-table">
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+            <tbody id="usersTableBody">
+              <tr><td colspan="5" style="text-align:center;color:var(--color-ivory-dim);padding:2rem;">Loading users…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Roles & Permissions</h3>
+          <p class="card-sub">What each role can access.</p>
+          <table class="admin-table">
+            <thead><tr><th>Role</th><th>Products</th><th>Site content</th><th>Users</th><th>Orders</th></tr></thead>
+            <tbody id="rolesTableBody">
+              <tr><td colspan="5" style="text-align:center;color:var(--color-ivory-dim);padding:2rem;">Loading roles…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CONTACT -->
+      <div class="panel-view" id="panel-contact">
+        <div class="card">
+          <h3 class="card-title">Contact details</h3>
+          <p class="card-sub">Shown in the footer, contact page, and order confirmation emails.</p>
+          <div class="field-row">
+            <div class="field"><label>Phone number</label><input type="text" id="contact_phone" placeholder="+1 (214) 555-0134"></div>
+            <div class="field"><label>Email address</label><input type="text" id="contact_email" placeholder="hello@graphicycafe.com"></div>
+          </div>
+          <div class="field"><label>Street address</label><input type="text" id="contact_address" placeholder="4118 Ember Row, Dallas, TX 75201"></div>
+          <div class="field"><label>Google Maps link</label><input type="text" id="contact_maps" placeholder="https://maps.google.com/?q=GraphicyCafe+Dallas"></div>
+          <div class="field-row">
+            <div class="field"><label>Opening hours (weekdays)</label><input type="text" id="contact_weekdays" placeholder="5:00 PM – 11:00 PM"></div>
+            <div class="field"><label>Opening hours (weekends)</label><input type="text" id="contact_weekends" placeholder="12:00 PM – 1:00 AM"></div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveContactDetails()">Save contact details</button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+// ─── HERO SLIDES ───
+let heroSlides = [];
+let featuredSectionsData = [];
+let editingSlideId = null;
+
+async function loadHeroSlides() {
+  try {
+    const res = await fetch('/api/admin/hero-slides', { credentials: 'include' });
+    if (res.ok) {
+      heroSlides = await res.json();
+      renderHeroSlides();
+    }
+  } catch (err) {
+    console.error('Failed to load hero slides:', err);
+  }
+}
+
+function renderHeroSlides() {
+  const container = document.getElementById('heroSlidesContainer');
+  if (!container) return;
+  
+  if (heroSlides.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center;color:var(--color-ivory-dim);padding:2rem;border:1px dashed var(--color-line-strong);border-radius:var(--radius-md);">
+        <div style="font-size:32px;margin-bottom:8px;">🖼️</div>
+        <p>No hero slides yet. Add your first slide!</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = heroSlides.map((slide, index) => `
+    <div class="featured-row" data-slide-id="${slide.id}" style="display:flex;align-items:center;gap:12px;padding:12px;margin-bottom:8px;background:var(--color-surface-raised);border:1px solid var(--color-line);border-radius:var(--radius-sm);">
+      <span class="drag-handle" style="cursor:grab;color:var(--color-ivory-dim);font-size:14px;">⠿</span>
+      <div style="width:60px;height:60px;border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0;background:var(--color-bg);">
+        <img src="${slide.image_url}" alt="${slide.title}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:500;font-size:14px;">${slide.title}</div>
+        <div style="font-size:12px;color:var(--color-ivory-dim);">${slide.eyebrow || 'No eyebrow'} · ${slide.is_active ? '✅ Active' : '⛔ Inactive'}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button class="icon-action" onclick="editSlide('${slide.id}')" style="width:28px;height:28px;border-radius:var(--radius-sm);border:1px solid var(--color-line-strong);background:transparent;color:var(--color-ivory);font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;">✎</button>
+        <button class="icon-action" onclick="deleteSlide('${slide.id}')" style="width:28px;height:28px;border-radius:var(--radius-sm);border:1px solid var(--color-line-strong);background:transparent;color:var(--color-ivory);font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openAddSlideModal() {
+  editingSlideId = null;
+  document.getElementById('slideModalTitle').textContent = 'Add Hero Slide';
+  document.getElementById('slideId').value = '';
+  document.getElementById('slideImageUrl').value = '';
+  document.getElementById('slideImagePreview').innerHTML = '<span style="color:var(--color-ivory-dim);font-size:11px;">No image</span>';
+  document.getElementById('slideEyebrow').value = '';
+  document.getElementById('slideTitle').value = '';
+  document.getElementById('slideSubtitle').value = '';
+  document.getElementById('slideCtaText').value = '';
+  document.getElementById('slideCtaLink').value = '';
+  document.getElementById('slideActive').checked = true;
+  document.getElementById('slideOrder').value = heroSlides.length;
+  document.getElementById('slideModal').style.display = 'flex';
+}
+// ─── EDIT FEATURED SECTION CONFIG ───
+function openEditSectionConfig(sectionId) {
+  const section = featuredSectionsData.find(s => s.id === sectionId);
+  if (!section) {
+    showToast('Section not found', true);
+    return;
+  }
+  
+  const config = section.config || {};
+  const html = `
+    <div class="modal-backdrop" id="configModal" onclick="if(event.target===this)this.remove()">
+      <div class="modal-shell" onclick="event.stopPropagation()" style="max-width:700px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h3 style="margin:0;">Edit: ${section.title || section.section_key}</h3>
+          <button onclick="this.closest('.modal-backdrop').remove()" style="background:none;border:none;color:var(--color-ivory-dim);font-size:24px;cursor:pointer;">×</button>
+        </div>
+        
+        <div class="field">
+          <label>Section Title</label>
+          <input type="text" id="configSectionTitle" value="${section.title || ''}">
+        </div>
+        
+        <div class="field">
+          <label>Eyebrow (subtitle)</label>
+          <input type="text" id="configEyebrow" value="${config.eyebrow || ''}" placeholder="e.g. Right now">
+        </div>
+        
+        <div class="field">
+          <label>Items (JSON format)</label>
+          <textarea id="configItems" style="min-height:150px;font-family:var(--font-mono);font-size:12px;">${JSON.stringify(config.items || [], null, 2)}</textarea>
+          <div class="field-hint">Array of items with title, desc, icon, image, price, etc.</div>
+        </div>
+        
+        <div class="field">
+          <label>Additional Config (JSON)</label>
+          <textarea id="configExtra" style="min-height:80px;font-family:var(--font-mono);font-size:12px;">${JSON.stringify(Object.keys(config).filter(k => !['eyebrow','items'].includes(k)).reduce((obj, k) => ({...obj, [k]: config[k]}), {}), null, 2)}</textarea>
+        </div>
+        
+        <div style="display:flex; gap:10px; margin-top:1.5rem;">
+          <button class="btn btn-primary btn-sm" onclick="saveSectionConfig('${sectionId}')">Save config</button>
+          <button class="btn btn-sm" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+async function saveSectionConfig(sectionId) {
+  const title = document.getElementById('configSectionTitle').value;
+  const eyebrow = document.getElementById('configEyebrow').value;
+  const itemsText = document.getElementById('configItems').value;
+  const extraText = document.getElementById('configExtra').value;
+  
+  let items = [];
+  let extra = {};
+  try {
+    items = JSON.parse(itemsText);
+    extra = JSON.parse(extraText);
+  } catch (e) {
+    showToast('Invalid JSON format. Please fix and try again.', true);
+    return;
+  }
+  
+  const config = { eyebrow, items, ...extra };
+  
+  try {
+    const res = await fetch(`/api/admin/featured-sections/${sectionId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ title, config })
+    });
+    if (res.ok) {
+      showToast('Section config saved!');
+      document.querySelector('.modal-backdrop')?.remove();
+      loadFeaturedSections();
+    } else {
+      showToast('Failed to save config');
+    }
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  }
+}
+
+/* ═══ FEATURED SECTIONS ═══ */
+async function loadFeaturedSections() {
+  try {
+    const res = await fetch('/api/admin/featured-sections', { credentials: 'include' });
+    if (res.ok) {
+      featuredSectionsData = await res.json();
+      const container = document.getElementById('featuredSectionsContainer');
+      if (container && featuredSectionsData.length > 0) {
+        container.innerHTML = featuredSectionsData.map(s => {
+          const config = s.config || {};
+          const itemCount = config.items ? config.items.length : 0;
+          const hasEyebrow = config.eyebrow ? '✅' : '❌';
+          
+          return `
+          <div class="featured-row" data-section-id="${s.id}">
+            <span class="drag-handle">⠿</span>
+            <div style="flex:1;cursor:pointer;" onclick="openEditSectionConfig('${s.id}')">
+              <div class="featured-row-title">${s.title || s.section_key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+              <div class="featured-row-sub">
+                ${s.section_key} · 
+                ${itemCount > 0 ? `${itemCount} items` : 'No items'} · 
+                Eyebrow: ${hasEyebrow}
+              </div>
+            </div>
+            <span class="toggle ${s.is_visible ? 'is-on' : ''}" data-section-id="${s.id}" data-field="is_visible"></span>
+            <button class="icon-action" onclick="deleteFeaturedSection('${s.id}')" style="margin-left:4px;">✕</button>
+          </div>
+        `}).join('');
+        
+        // Bind toggle events
+        document.querySelectorAll('#featuredSectionsContainer .toggle').forEach(t => {
+          t.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const isOn = t.classList.toggle('is-on');
+            const sectionId = t.dataset.sectionId;
+            try {
+              await fetch(`/api/admin/featured-sections/${sectionId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ is_visible: isOn })
+              });
+              showToast('Section updated');
+              loadFeaturedSections(); // Refresh the list
+            } catch (err) {
+              t.classList.toggle('is-on');
+              showToast('Failed to update');
+            }
+          });
+        });
+      } else {
+        container.innerHTML = '<div style="text-align:center;color:var(--color-ivory-dim);padding:1rem;">No sections configured. Add one below.</div>';
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load featured sections:', err);
+  }
+  loadFeaturedProducts();
+}
+// Also update the add section modal to include config
+function openAddSectionModal() {
+  const html = `
+    <div class="modal-backdrop" onclick="this.remove()">
+      <div class="modal-shell" onclick="event.stopPropagation()">
+        <h3 style="margin-bottom:1rem;">Add Featured Section</h3>
+        <div class="field">
+          <label>Section Key (unique identifier)</label>
+          <input type="text" id="modalSectionKey" placeholder="e.g. offers, trust_strip, featured_banner">
+          <div class="field-hint">Use: offers, trust_strip, newsletter, featured_banner, or custom</div>
+        </div>
+        <div class="field"><label>Title</label><input type="text" id="modalSectionTitle" placeholder="e.g. Offers & Specials"></div>
+        <div class="field"><label>Display Order</label><input type="number" id="modalSectionOrder" value="0"></div>
+        <div class="field">
+          <label>Initial Config (JSON)</label>
+          <textarea id="modalSectionConfig" style="min-height:100px;font-family:var(--font-mono);font-size:12px;">{"eyebrow":"Right now","items":[{"title":"Example","desc":"Description","link_text":"Learn more →"}]}</textarea>
+        </div>
+        <div style="display:flex; gap:1rem; margin-top:0.5rem;">
+          <label style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--color-ivory-dim);">
+            <input type="checkbox" id="modalSectionVisible" checked /> Visible
+          </label>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:1.5rem;">
+          <button class="btn btn-primary btn-sm" onclick="saveFeaturedSection()">Save section</button>
+          <button class="btn btn-sm" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+async function saveFeaturedSection() {
+  const section_key = document.getElementById('modalSectionKey').value.trim();
+  const title = document.getElementById('modalSectionTitle').value;
+  const display_order = parseInt(document.getElementById('modalSectionOrder').value) || 0;
+  const is_visible = document.getElementById('modalSectionVisible').checked;
+  let config = {};
+  try {
+    config = JSON.parse(document.getElementById('modalSectionConfig').value);
+  } catch (e) {
+    showToast('Invalid JSON config', true);
+    return;
+  }
+  
+  if (!section_key) { showToast('Section key is required'); return; }
+  
+  const res = await fetch('/api/admin/featured-sections', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ section_key, title, display_order, is_visible, config })
+  });
+  if (res.ok) {
+    showToast('Section added');
+    document.querySelector('.modal-backdrop')?.remove();
+    loadFeaturedSections();
+  } else {
+    showToast('Failed to add section');
+  }
+}
+function editSlide(id) {
+  const slide = heroSlides.find(s => s.id === id);
+  if (!slide) return;
+  
+  editingSlideId = id;
+  document.getElementById('slideModalTitle').textContent = 'Edit Hero Slide';
+  document.getElementById('slideId').value = id;
+  document.getElementById('slideImageUrl').value = slide.image_url || '';
+  document.getElementById('slideImagePreview').innerHTML = slide.image_url ? 
+    `<img src="${slide.image_url}" style="width:100%;height:100%;object-fit:cover;">` : 
+    '<span style="color:var(--color-ivory-dim);font-size:11px;">No image</span>';
+  document.getElementById('slideEyebrow').value = slide.eyebrow || '';
+  document.getElementById('slideTitle').value = slide.title || '';
+  document.getElementById('slideSubtitle').value = slide.subtitle || '';
+  document.getElementById('slideCtaText').value = slide.cta_text || '';
+  document.getElementById('slideCtaLink').value = slide.cta_link || '';
+  document.getElementById('slideActive').checked = slide.is_active !== false;
+  document.getElementById('slideOrder').value = slide.display_order || 0;
+  document.getElementById('slideModal').style.display = 'flex';
+}
+
+function closeSlideModal() {
+  document.getElementById('slideModal').style.display = 'none';
+}
+
+async function handleSlideImageUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result.split(',')[1];
+    
+    // Show preview
+    document.getElementById('slideImagePreview').innerHTML = 
+      `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
+    
+    // Upload to ImgBB
+    try {
+      const res = await fetch('/api/admin/upload-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ image_data: base64 })
+      });
+      const data = await res.json();
+      if (data.url) {
+        document.getElementById('slideImageUrl').value = data.url;
+        showToast('Image uploaded successfully!');
+      } else {
+        showToast('Upload failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch (err) {
+      showToast('Upload failed: ' + err.message);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// Sync image URL with preview
+document.addEventListener('DOMContentLoaded', function() {
+  const urlInput = document.getElementById('slideImageUrl');
+  if (urlInput) {
+    urlInput.addEventListener('input', function() {
+      const preview = document.getElementById('slideImagePreview');
+      if (this.value) {
+        preview.innerHTML = `<img src="${this.value}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML='<span style=\\'color:var(--color-ivory-dim);font-size:11px;\\'>Invalid URL</span>'">`;
+      } else {
+        preview.innerHTML = '<span style="color:var(--color-ivory-dim);font-size:11px;">No image</span>';
+      }
+    });
+  }
+});
+
+async function saveSlide(event) {
+  event.preventDefault();
+  
+  const id = document.getElementById('slideId').value;
+  const image_url = document.getElementById('slideImageUrl').value.trim();
+  const eyebrow = document.getElementById('slideEyebrow').value.trim();
+  const title = document.getElementById('slideTitle').value.trim();
+  const subtitle = document.getElementById('slideSubtitle').value.trim();
+  const cta_text = document.getElementById('slideCtaText').value.trim();
+  const cta_link = document.getElementById('slideCtaLink').value.trim();
+  const is_active = document.getElementById('slideActive').checked;
+  const display_order = parseInt(document.getElementById('slideOrder').value) || 0;
+  
+  if (!image_url) { showToast('Image URL is required'); return; }
+  if (!title) { showToast('Title is required'); return; }
+  
+  const payload = { image_url, eyebrow, title, subtitle, cta_text, cta_link, is_active, display_order };
+  
+  let url, method;
+  if (id) {
+    url = `/api/admin/hero-slides/${id}`;
+    method = 'PUT';
+  } else {
+    url = '/api/admin/hero-slides';
+    method = 'POST';
+  }
+  
+  try {
+    const res = await fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      showToast(id ? 'Slide updated!' : 'Slide added!');
+      closeSlideModal();
+      loadHeroSlides();
+    } else {
+      const data = await res.json();
+      showToast('Failed: ' + (data.error || 'Unknown error'));
+    }
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  }
+}
+
+async function deleteSlide(id) {
+  if (!confirm('Delete this slide?')) return;
+  try {
+    const res = await fetch(`/api/admin/hero-slides/${id}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    if (res.ok) {
+      showToast('Slide deleted');
+      loadHeroSlides();
+    } else {
+      showToast('Failed to delete');
+    }
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  }
+}
+
+// ─── TESTIMONIALS ───
+let testimonials = [];
+
+async function loadTestimonials() {
+  try {
+    const res = await fetch('/api/admin/testimonials', { credentials: 'include' });
+    if (res.ok) {
+      testimonials = await res.json();
+      renderTestimonials();
+    }
+  } catch (err) {
+    console.error('Failed to load testimonials:', err);
+  }
+}
+
+function renderTestimonials() {
+  const container = document.getElementById('testimonialsContainer');
+  if (!container) return;
+
+  if (testimonials.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center;color:var(--color-ivory-dim);padding:2rem;border:1px dashed var(--color-line-strong);border-radius:var(--radius-md);">
+        <div style="font-size:32px;margin-bottom:8px;">❝</div>
+        <p>No testimonials yet. Add your first one!</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = testimonials.map(t => `
+    <div class="featured-row" style="display:flex;align-items:center;gap:12px;padding:12px;margin-bottom:8px;background:var(--color-surface-raised);border:1px solid var(--color-line);border-radius:var(--radius-sm);">
+      <div style="width:44px;height:44px;border-radius:50%;background:var(--color-amber);color:#211405;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">${t.initials || '??'}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:500;font-size:14px;">${t.name} <span style="color:var(--color-ivory-dim);font-weight:400;font-size:12px;">${'★'.repeat(t.stars)}${'☆'.repeat(5 - t.stars)}</span></div>
+        <div style="font-size:12px;color:var(--color-ivory-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px;">${t.quote}</div>
+        <div style="font-size:11px;color:var(--color-ivory-dim);">${t.role || ''} ${t.is_visible ? '· ✅ Visible' : '· ⛔ Hidden'}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button class="icon-action" onclick="editTestimonial('${t.id}')" style="width:28px;height:28px;border-radius:var(--radius-sm);border:1px solid var(--color-line-strong);background:transparent;color:var(--color-ivory);font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;">✎</button>
+        <button class="icon-action" onclick="deleteTestimonial('${t.id}')" style="width:28px;height:28px;border-radius:var(--radius-sm);border:1px solid var(--color-line-strong);background:transparent;color:var(--color-ivory);font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openAddTestimonialModal() {
+  document.getElementById('testimonialModalTitle').textContent = 'Add Testimonial';
+  document.getElementById('testimonialId').value = '';
+  document.getElementById('testimonialName').value = '';
+  document.getElementById('testimonialInitials').value = '';
+  document.getElementById('testimonialRole').value = '';
+  document.getElementById('testimonialQuote').value = '';
+  document.getElementById('testimonialStars').value = '5';
+  document.getElementById('testimonialVisible').checked = true;
+  document.getElementById('testimonialOrder').value = testimonials.length;
+  document.getElementById('testimonialModal').style.display = 'flex';
+}
+
+function editTestimonial(id) {
+  const t = testimonials.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('testimonialModalTitle').textContent = 'Edit Testimonial';
+  document.getElementById('testimonialId').value = id;
+  document.getElementById('testimonialName').value = t.name || '';
+  document.getElementById('testimonialInitials').value = t.initials || '';
+  document.getElementById('testimonialRole').value = t.role || '';
+  document.getElementById('testimonialQuote').value = t.quote || '';
+  document.getElementById('testimonialStars').value = String(t.stars || 5);
+  document.getElementById('testimonialVisible').checked = t.is_visible !== false;
+  document.getElementById('testimonialOrder').value = t.display_order || 0;
+  document.getElementById('testimonialModal').style.display = 'flex';
+}
+
+function closeTestimonialModal() {
+  document.getElementById('testimonialModal').style.display = 'none';
+}
+
+async function saveTestimonial(event) {
+  event.preventDefault();
+  const id = document.getElementById('testimonialId').value;
+  const payload = {
+    name: document.getElementById('testimonialName').value.trim(),
+    initials: document.getElementById('testimonialInitials').value.trim(),
+    role: document.getElementById('testimonialRole').value.trim(),
+    quote: document.getElementById('testimonialQuote').value.trim(),
+    stars: parseInt(document.getElementById('testimonialStars').value) || 5,
+    display_order: parseInt(document.getElementById('testimonialOrder').value) || 0,
+    is_visible: document.getElementById('testimonialVisible').checked,
+  };
+  if (!payload.name || !payload.quote) { showToast('Name and quote are required'); return; }
+
+  const url = id ? `/api/admin/testimonials/${id}` : '/api/admin/testimonials';
+  const method = id ? 'PUT' : 'POST';
+
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      showToast(id ? 'Testimonial updated!' : 'Testimonial added!');
+      closeTestimonialModal();
+      loadTestimonials();
+    } else {
+      const data = await res.json();
+      showToast('Failed: ' + (data.error || 'Unknown error'));
+    }
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  }
+}
+
+async function deleteTestimonial(id) {
+  if (!confirm('Delete this testimonial?')) return;
+  try {
+    const res = await fetch(`/api/admin/testimonials/${id}`, { method: 'DELETE', credentials: 'include' });
+    if (res.ok) {
+      showToast('Testimonial deleted');
+      loadTestimonials();
+    } else {
+      showToast('Failed to delete');
+    }
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  }
+}
+
+// ─── LIVE EDITOR (generic page content) ───
+// Schema is intentionally in code, not just in the DB: it drives field
+// labels/grouping/order in the form. Adding a new editable field later
+// = one line here + one seed row in schema.sql, no other admin changes.
+const PAGE_CONTENT_SCHEMA = {
+  global: {
+    label: 'Global (header/footer, all pages)',
+    frame: 'index.html',
+    groups: [
+      { title: 'Brand & logo', fields: [
+        { ckey: 'logo_url', label: 'Logo', type: 'image', source: 'site_settings', dbField: 'logo_url' },
+        { ckey: 'site_name', label: 'Site name', source: 'site_settings', dbField: 'site_name' },
+        { ckey: 'tagline', label: 'Tagline (used in browser tab / footer)', source: 'site_settings', dbField: 'tagline' },
+      ]},
+      { title: 'Navigation labels', fields: [
+        { ckey: 'nav_1', label: 'Nav link 1' },
+        { ckey: 'nav_2', label: 'Nav link 2' },
+        { ckey: 'nav_3', label: 'Nav link 3' },
+        { ckey: 'nav_4', label: 'Nav link 4' },
+      ]},
+      { title: 'Footer', fields: [
+        { ckey: 'footer_tagline', label: 'Tagline', multiline: true },
+        { ckey: 'footer_explore_1', label: 'Explore link 1' },
+        { ckey: 'footer_explore_2', label: 'Explore link 2' },
+        { ckey: 'footer_explore_3', label: 'Explore link 3' },
+        { ckey: 'footer_explore_4', label: 'Explore link 4' },
+        { ckey: 'footer_support_1', label: 'Support link 1' },
+        { ckey: 'footer_support_2', label: 'Support link 2' },
+        { ckey: 'footer_support_3', label: 'Support link 3' },
+        { ckey: 'footer_support_4', label: 'Support link 4' },
+        { ckey: 'footer_copyright', label: 'Copyright line' },
+      ]},
+    ]
+  },
+  index: {
+    label: 'Home page',
+    frame: 'index.html',
+    groups: [
+      { title: 'Featured banner', fields: [
+        { ckey: 'featured_title', label: 'Title', source: 'homepage', dbField: 'featured_title' },
+        { ckey: 'featured_description', label: 'Description', multiline: true, source: 'homepage', dbField: 'featured_description' },
+        { ckey: 'featured_cta_text', label: 'CTA button text', source: 'homepage', dbField: 'featured_cta_text' },
+        { ckey: 'featured_cta_link', label: 'CTA button link', source: 'homepage', dbField: 'featured_cta_link' },
+      ]},
+      { title: 'Offers section', fields: [
+        { ckey: 'offers_title', label: 'Title', source: 'homepage', dbField: 'offers_title' },
+        { ckey: 'offers_eyebrow', label: 'Eyebrow' },
+      ]},
+      { title: 'Products section', fields: [
+        { ckey: 'products_eyebrow', label: 'Eyebrow' },
+        { ckey: 'products_title', label: 'Title' },
+        { ckey: 'products_link_text', label: '"View all" link text' },
+      ]},
+      { title: '3D gallery section', fields: [
+        { ckey: 'gallery_eyebrow', label: 'Eyebrow' },
+        { ckey: 'gallery_title', label: 'Title' },
+        { ckey: 'gallery_link_text', label: 'Link text' },
+      ]},
+      { title: 'Testimonials section', fields: [
+        { ckey: 'testimonials_eyebrow', label: 'Eyebrow' },
+        { ckey: 'testimonials_title', label: 'Title' },
+      ]},
+      { title: 'Trust strip (4 items)', fields: [
+        { ckey: 'trust_item_1', label: 'Item 1' },
+        { ckey: 'trust_item_2', label: 'Item 2' },
+        { ckey: 'trust_item_3', label: 'Item 3' },
+        { ckey: 'trust_item_4', label: 'Item 4' },
+      ]},
+      { title: 'Newsletter section', fields: [
+        { ckey: 'newsletter_eyebrow', label: 'Eyebrow' },
+        { ckey: 'newsletter_title', label: 'Title' },
+        { ckey: 'newsletter_description', label: 'Description', multiline: true },
+        { ckey: 'newsletter_button_text', label: 'Button text' },
+      ]},
+    ]
+  },
+  products: {
+    label: 'Menu / Products listing',
+    frame: 'products.html',
+    groups: [
+      { title: 'Page header', fields: [
+        { ckey: 'page_title', label: 'Page title' },
+      ]},
+    ]
+  },
+  'product-details': {
+    label: 'Product details',
+    frame: 'products.html',
+    groups: [
+      { title: 'Tabs', fields: [
+        { ckey: 'tab_description', label: 'Tab: Description' },
+        { ckey: 'tab_reviews', label: 'Tab: Reviews' },
+        { ckey: 'tab_similar', label: 'Tab: Similar products' },
+      ]},
+      { title: 'Viewing mode switch', fields: [
+        { ckey: 'mode_3d', label: 'Mode: View 3D' },
+        { ckey: 'mode_simple_ar', label: 'Mode: Simple AR' },
+        { ckey: 'mode_advanced_ar', label: 'Mode: Advanced AR' },
+      ]},
+    ]
+  },
+  cart: {
+    label: 'Cart widget',
+    frame: 'cart.html',
+    groups: [
+      { title: 'Cart panel', fields: [
+        { ckey: 'title', label: 'Panel title' },
+        { ckey: 'empty_title', label: 'Empty state title' },
+        { ckey: 'empty_desc', label: 'Empty state description', multiline: true },
+        { ckey: 'empty_button', label: 'Empty state button' },
+        { ckey: 'label_subtotal', label: 'Subtotal label' },
+        { ckey: 'label_delivery', label: 'Delivery label' },
+        { ckey: 'label_tax', label: 'Tax label' },
+        { ckey: 'label_total', label: 'Total label' },
+        { ckey: 'button_checkout', label: 'Checkout button' },
+        { ckey: 'button_clear', label: 'Clear button' },
+      ]},
+    ]
+  },
+  review: {
+    label: 'Review widget',
+    frame: 'review.html',
+    groups: [
+      { title: 'Review modal', fields: [
+        { ckey: 'heading', label: 'Heading' },
+        { ckey: 'subtitle', label: 'Subtitle' },
+        { ckey: 'email_hint', label: 'Email hint' },
+        { ckey: 'photo_hint', label: 'Photo upload hint' },
+        { ckey: 'button_submit', label: 'Submit button' },
+        { ckey: 'button_cancel', label: 'Cancel button' },
+      ]},
+      { title: 'Success state', fields: [
+        { ckey: 'success_title', label: 'Title' },
+        { ckey: 'success_desc', label: 'Description', multiline: true },
+      ]},
+    ]
+  },
+  bot: {
+    label: 'AI assistant widget',
+    frame: 'bot.html',
+    groups: [
+      { title: 'Bot identity', fields: [
+        { ckey: 'name', label: 'Bot name' },
+        { ckey: 'status', label: 'Status label' },
+      ]},
+      { title: 'Messages', fields: [
+        { ckey: 'welcome_message', label: 'Welcome message', multiline: true },
+        { ckey: 'input_placeholder', label: 'Input placeholder' },
+      ]},
+      { title: 'Quick action buttons', fields: [
+        { ckey: 'quick_action_1', label: 'Button 1' },
+        { ckey: 'quick_action_2', label: 'Button 2' },
+        { ckey: 'quick_action_3', label: 'Button 3' },
+        { ckey: 'quick_action_4', label: 'Button 4' },
+      ]},
+    ]
+  },
+};
+
+let liveEditorContent = {};
+let liveEditorSiteSettings = {};
+let liveEditorHomepage = {};
+
+async function loadLiveEditorFields() {
+  const page = document.getElementById('liveEditorPageSelect').value;
+  const schema = PAGE_CONTENT_SCHEMA[page];
+  document.getElementById('liveEditorPageLabel').textContent = schema.label;
+
+  // Does this page's schema need site_settings and/or homepage_content?
+  const needsSiteSettings = schema.groups.some(g => g.fields.some(f => f.source === 'site_settings'));
+  const needsHomepage = schema.groups.some(g => g.fields.some(f => f.source === 'homepage'));
+
+  try {
+    const res = await fetch(`/api/admin/content/${page}`, { credentials: 'include' });
+    liveEditorContent = {};
+    if (res.ok) {
+      const rows = await res.json();
+      rows.forEach(r => { liveEditorContent[r.ckey] = r.value; });
+    }
+  } catch (err) {
+    console.error('Failed to load page content:', err);
+  }
+
+  if (needsSiteSettings) {
+    try {
+      const res = await fetch('/api/admin/site-settings', { credentials: 'include' });
+      liveEditorSiteSettings = res.ok ? await res.json() : {};
+    } catch (err) { liveEditorSiteSettings = {}; }
+  }
+
+  if (needsHomepage) {
+    try {
+      const res = await fetch('/api/admin/homepage', { credentials: 'include' });
+      liveEditorHomepage = res.ok ? await res.json() : {};
+    } catch (err) { liveEditorHomepage = {}; }
+  }
+
+  renderLiveEditorFields(page, schema);
+  refreshLiveEditorPreview();
+}
+
+function getFieldValue(f) {
+  if (f.source === 'site_settings') return liveEditorSiteSettings[f.dbField] ?? '';
+  if (f.source === 'homepage') return liveEditorHomepage[f.dbField] ?? '';
+  return liveEditorContent[f.ckey] ?? '';
+}
+
+function renderLiveEditorFields(page, schema) {
+  const container = document.getElementById('liveEditorFields');
+  container.innerHTML = schema.groups.map(group => `
+    <div style="margin-bottom:18px;">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--color-ivory-dim);margin-bottom:8px;">${group.title}</div>
+      ${group.fields.map(f => {
+        const val = getFieldValue(f);
+        const inputId = `ckey__${f.ckey}`;
+        const source = f.source || 'content';
+        const dbField = f.dbField || '';
+
+        if (f.type === 'image') {
+          return `
+            <div class="field" style="margin-bottom:12px;">
+              <label style="font-size:12px;">${f.label}</label>
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <div style="width:60px;height:60px;border-radius:var(--radius-sm);background:var(--color-bg);border:1px dashed var(--color-line-strong);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;" id="${inputId}__preview">
+                  ${val ? `<img src="${escapeHtml(val)}" style="width:100%;height:100%;object-fit:contain;">` : `<span style="color:var(--color-ivory-dim);font-size:10px;">No image</span>`}
+                </div>
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('${inputId}__file').click()">Upload</button>
+                <input type="file" id="${inputId}__file" accept="image/*" style="display:none" onchange="handleLiveEditorImageUpload(event,'${inputId}')">
+                <input type="text" id="${inputId}" data-ckey="${f.ckey}" data-source="${source}" data-dbfield="${dbField}" data-type="image" value="${escapeHtml(val)}" placeholder="Or paste image URL" oninput="document.getElementById('${inputId}__preview').innerHTML = this.value ? '<img src=\\'' + this.value + '\\' style=\\'width:100%;height:100%;object-fit:contain;\\'>' : '<span style=\\'color:var(--color-ivory-dim);font-size:10px;\\'>No image</span>'" style="flex:1;min-width:140px;background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:8px 10px;color:var(--color-ivory);font-size:12px;">
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="field" style="margin-bottom:12px;">
+            <label style="font-size:12px;">${f.label}</label>
+            ${f.multiline
+              ? `<textarea id="${inputId}" data-ckey="${f.ckey}" data-source="${source}" data-dbfield="${dbField}" style="width:100%;background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:8px 10px;color:var(--color-ivory);font-size:13px;resize:vertical;min-height:60px;">${escapeHtml(val)}</textarea>`
+              : `<input type="text" id="${inputId}" data-ckey="${f.ckey}" data-source="${source}" data-dbfield="${dbField}" value="${escapeHtml(val)}" style="width:100%;background:var(--color-bg);border:1px solid var(--color-line-strong);border-radius:var(--radius-sm);padding:8px 10px;color:var(--color-ivory);font-size:13px;">`
+            }
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `).join('') + `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="saveAllLiveEditorFields()">Save all & refresh preview</button>`;
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+async function handleLiveEditorImageUpload(event, inputId) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result.split(',')[1];
+    document.getElementById(`${inputId}__preview`).innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:contain;">`;
+    try {
+      const res = await fetch('/api/admin/upload-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ image_data: base64 })
+      });
+      const data = await res.json();
+      if (data.url) {
+        document.getElementById(inputId).value = data.url;
+        showToast('Image uploaded (click "Save all" to persist)');
+      } else {
+        showToast('Upload failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch (err) {
+      showToast('Upload failed: ' + err.message);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveAllLiveEditorFields() {
+  const page = document.getElementById('liveEditorPageSelect').value;
+  const inputs = document.querySelectorAll('#liveEditorFields [data-ckey]');
+  let failed = 0;
+
+  const siteSettingsUpdates = {};
+  const homepageUpdates = {};
+
+  for (const input of inputs) {
+    const source = input.dataset.source || 'content';
+    const value = input.value;
+
+    if (source === 'site_settings') {
+      siteSettingsUpdates[input.dataset.dbfield] = value;
+      continue;
+    }
+    if (source === 'homepage') {
+      homepageUpdates[input.dataset.dbfield] = value;
+      continue;
+    }
+
+    // default: generic page_content ckey
+    const ckey = input.dataset.ckey;
+    try {
+      const res = await fetch('/api/admin/content', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ page, ckey, field_type: input.tagName === 'TEXTAREA' ? 'richtext' : (input.dataset.type === 'image' ? 'image' : 'text'), value })
+      });
+      if (!res.ok) failed++;
+    } catch (err) {
+      failed++;
+    }
+  }
+
+  // Site-settings-sourced fields: merge onto the currently loaded object
+  // (so fields not shown on this page, e.g. contact info, aren't clobbered)
+  // and PUT once.
+  if (Object.keys(siteSettingsUpdates).length > 0) {
+    const merged = { ...liveEditorSiteSettings, ...siteSettingsUpdates };
+    try {
+      const res = await fetch('/api/admin/site-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(merged)
+      });
+      if (res.ok) liveEditorSiteSettings = merged; else failed++;
+    } catch (err) { failed++; }
+  }
+
+  // Homepage-content-sourced fields: same merge-then-PUT-once approach.
+  if (Object.keys(homepageUpdates).length > 0) {
+    const merged = { ...liveEditorHomepage, ...homepageUpdates };
+    try {
+      const res = await fetch('/api/admin/homepage', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(merged)
+      });
+      if (res.ok) liveEditorHomepage = merged; else failed++;
+    } catch (err) { failed++; }
+  }
+
+  if (failed === 0) {
+    showToast('Content saved!');
+  } else {
+    showToast(`Saved with ${failed} error(s)`);
+  }
+  refreshLiveEditorPreview();
+}
+
+function refreshLiveEditorPreview() {
+  const page = document.getElementById('liveEditorPageSelect').value;
+  const schema = PAGE_CONTENT_SCHEMA[page];
+  const frame = document.getElementById('liveEditorFrame');
+  // cache-bust so the iframe always reflects the latest saved content
+  frame.src = `/${schema.frame}?_t=${Date.now()}`;
+}
+
+function openLiveEditorPreviewNewTab() {
+  const page = document.getElementById('liveEditorPageSelect').value;
+  const schema = PAGE_CONTENT_SCHEMA[page];
+  window.open(`/${schema.frame}`, '_blank');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('liveEditorPageSelect');
+  if (sel) sel.addEventListener('change', loadLiveEditorFields);
+});
+
+// Add to navigation click handler
+// Update the nav click handler to include hero-slider
+// Find the existing nav click handler and add:
+// case 'hero-slider': loadHeroSlides(); break;
+/* ═══ AUTH ═══ */
+const ADMIN_PANEL_ROLES = ['admin', 'manager', 'editor'];
+
+async function checkAuth() {
+  try {
+    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      if (!ADMIN_PANEL_ROLES.includes(data.user?.role)) {
+        // Authenticated, but not staff (e.g. a customer account) - this area isn't for them.
+        document.getElementById('loginOverlay').classList.add('visible');
+        document.getElementById('appShell').classList.remove('visible');
+        const errorEl = document.getElementById('loginError');
+        if (errorEl) errorEl.textContent = 'This account does not have admin access.';
+        return;
+      }
+      document.getElementById('loginOverlay').classList.remove('visible');
+      document.getElementById('appShell').classList.add('visible');
+      loadDashboardStats();
+      loadThemeSettings();
+      loadProducts();
+      loadCategories();
+      loadUsersAndRoles();
+      loadContactDetails();
+      loadFeaturedSections();
+      loadModels();
+      loadCategoriesForFilter();
+    } else {
+      document.getElementById('loginOverlay').classList.add('visible');
+      document.getElementById('appShell').classList.remove('visible');
+    }
+  } catch {
+    document.getElementById('loginOverlay').classList.add('visible');
+    document.getElementById('appShell').classList.remove('visible');
+  }
+}
+
+async function handleLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errorEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+
+  errorEl.textContent = '';
+  btn.textContent = 'Signing in…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      errorEl.textContent = data.error || 'Login failed';
+      return;
+    }
+    document.getElementById('loginError').textContent = '';
+    checkAuth();
+  } catch (err) {
+    errorEl.textContent = 'Network error.';
+  } finally {
+    btn.textContent = 'Sign in';
+    btn.disabled = false;
+  }
+}
+
+async function handleLogout() {
+  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+  document.getElementById('loginOverlay').classList.add('visible');
+  document.getElementById('appShell').classList.remove('visible');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && document.getElementById('loginOverlay').classList.contains('visible')) {
+    handleLogin();
+  }
+});
+
+/* ═══ DASHBOARD ═══ */
+async function loadDashboardStats() {
+  try {
+    const res = await fetch('/api/admin/stats', { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      document.getElementById('statOrders').textContent = data.orders_today || 0;
+      document.getElementById('statRevenue').textContent = '$' + (Number(data.revenue_today) || 0).toLocaleString();
+      document.getElementById('statProducts').textContent = data.active_products || 0;
+      document.getElementById('statLowStock').textContent = data.low_stock || 0;
+    }
+  } catch (err) { console.error(err); }
+}
+
+/* ═══ THEME SETTINGS ═══ */
+async function loadThemeSettings() {
+  try {
+    const res = await fetch('/api/admin/theme-settings', { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.color_background) document.getElementById('theme_bg').value = data.color_background;
+      if (data.color_surface) document.getElementById('theme_surface').value = data.color_surface;
+      if (data.color_ivory) document.getElementById('theme_ivory').value = data.color_ivory;
+      if (data.color_amber) document.getElementById('theme_amber').value = data.color_amber;
+      if (data.color_ember) document.getElementById('theme_ember').value = data.color_ember;
+      if (data.color_line) document.getElementById('theme_line').value = data.color_line;
+      
+      // Update swatches and preview
+      updateColorUI('theme_bg', data.color_background);
+      updateColorUI('theme_surface', data.color_surface);
+      updateColorUI('theme_ivory', data.color_ivory);
+      updateColorUI('theme_amber', data.color_amber);
+      updateColorUI('theme_ember', data.color_ember);
+      updateColorUI('theme_line', data.color_line);
+    }
+  } catch (err) { console.error(err); }
+}
+
+function updateColorUI(targetId, color) {
+  const swatch = document.querySelector(`#${targetId}`)?.closest('.color-swatch-row')?.querySelector('.color-swatch');
+  const picker = document.querySelector(`.color-picker[data-target="${targetId}"]`);
+  if (swatch) swatch.style.background = color;
+  if (picker) picker.value = color;
+  applyThemeColorToPreview(targetId, color);
+}
+
+async function saveThemeSettings() {
+  const payload = {
+    color_background: document.getElementById('theme_bg').value,
+    color_surface: document.getElementById('theme_surface').value,
+    color_ivory: document.getElementById('theme_ivory').value,
+    color_amber: document.getElementById('theme_amber').value,
+    color_ember: document.getElementById('theme_ember').value,
+    color_line: document.getElementById('theme_line').value,
+  };
+  const res = await fetch('/api/admin/theme-settings', {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (res.ok) showToast('Theme saved');
+  else showToast('Failed to save');
+}
+
+/* ═══ COLOR PICKER SYNC ═══ */
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.color-picker').forEach(picker => {
+    const targetId = picker.dataset.target;
+    const textInput = document.getElementById(targetId);
+    const swatch = picker.closest('.color-swatch-row').querySelector('.color-swatch');
+    
+    if (textInput) {
+      picker.addEventListener('input', function() {
+        const color = this.value;
+        textInput.value = color;
+        if (swatch) swatch.style.background = color;
+        applyThemeColorToPreview(targetId, color);
+      });
+      
+      textInput.addEventListener('input', function() {
+        const color = this.value;
+        if (/^#[0-9a-f]{6}$/i.test(color)) {
+          picker.value = color;
+          if (swatch) swatch.style.background = color;
+          applyThemeColorToPreview(targetId, color);
+        }
+      });
+    }
+  });
+});
+
+function applyThemeColorToPreview(targetId, color) {
+  const cssVarMap = {
+    'theme_bg': '--preview-bg',
+    'theme_surface': '--preview-surface',
+    'theme_ivory': '--preview-ivory',
+    'theme_amber': '--preview-amber',
+    'theme_ember': '--preview-ember',
+    'theme_line': '--preview-line'
+  };
+  
+  const cssVar = cssVarMap[targetId];
+  if (cssVar) {
+    const previewFrame = document.getElementById('previewFrame');
+    if (previewFrame) {
+      previewFrame.style.setProperty(cssVar, color);
+    }
+  }
+}
+
+/* ═══ CATEGORIES ═══ */
+let allCategories = [];
+
+async function loadCategories() {
+  try {
+    const res = await fetch('/api/admin/categories', { credentials: 'include' });
+    if (res.ok) {
+      allCategories = await res.json();
+      renderCategories(allCategories);
+    }
+  } catch (err) { console.error(err); }
+}
+
+function renderCategories(categories) {
+  const tbody = document.getElementById('categoriesTableBody');
+  if (categories.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--color-ivory-dim);padding:2rem;">No categories yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = categories.map(c => `
+    <tr data-category-id="${c.id}">
+      <td><strong>${c.name}</strong></td>
+      <td><span style="color:var(--color-ivory-dim);font-size:11px;">${c.slug}</span></td>
+      <td>${c.description || '—'}</td>
+      <td>${c.display_order || 0}</td>
+      <td class="row-actions">
+        <button class="icon-action" onclick="openEditCategoryModal('${c.id}')">✎</button>
+        <button class="icon-action" onclick="deleteCategory('${c.id}')">✕</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function loadCategoriesForFilter() {
+  try {
+    const res = await fetch('/api/admin/categories', { credentials: 'include' });
+    if (res.ok) {
+      const cats = await res.json();
+      const select = document.getElementById('categoryFilter');
+      select.innerHTML = '<option value="">All categories</option>' + 
+        cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    }
+  } catch (err) { console.error(err); }
+}
+
+function openAddCategoryModal() {
+  const html = `
+    <div class="modal-backdrop" onclick="this.remove()">
+      <div class="modal-shell" onclick="event.stopPropagation()">
+        <h3 style="margin-bottom:1rem;">Add Category</h3>
+        <div class="field"><label>Name</label><input type="text" id="modalCatName" placeholder="e.g. Mains"></div>
+        <div class="field"><label>Description</label><textarea id="modalCatDesc" placeholder="Category description…"></textarea></div>
+        <div class="field"><label>Display Order</label><input type="number" id="modalCatOrder" placeholder="0" value="0"></div>
+        <div style="display:flex; gap:10px; margin-top:1.5rem;">
+          <button class="btn btn-primary btn-sm" onclick="saveCategory()">Save category</button>
+          <button class="btn btn-sm" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+async function saveCategory() {
+  const name = document.getElementById('modalCatName').value;
+  const description = document.getElementById('modalCatDesc').value;
+  const display_order = parseInt(document.getElementById('modalCatOrder').value) || 0;
+  
+  if (!name) { showToast('Name is required'); return; }
+  
+  const res = await fetch('/api/admin/categories', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, description, display_order })
+  });
+  if (res.ok) {
+    showToast('Category saved');
+    document.querySelector('.modal-backdrop')?.remove();
+    loadCategories();
+    loadCategoriesForFilter();
+  } else {
+    showToast('Failed to save');
+  }
+}
+
+function openEditCategoryModal(id) {
+  const cat = allCategories.find(c => c.id === id);
+  if (!cat) return;
+  const html = `
+    <div class="modal-backdrop" onclick="this.remove()">
+      <div class="modal-shell" onclick="event.stopPropagation()">
+        <h3 style="margin-bottom:1rem;">Edit Category</h3>
+        <div class="field"><label>Name</label><input type="text" id="modalCatName" value="${cat.name}"></div>
+        <div class="field"><label>Description</label><textarea id="modalCatDesc">${cat.description || ''}</textarea></div>
+        <div class="field"><label>Display Order</label><input type="number" id="modalCatOrder" value="${cat.display_order || 0}"></div>
+        <div style="display:flex; gap:10px; margin-top:1.5rem;">
+          <button class="btn btn-primary btn-sm" onclick="updateCategory('${id}')">Update category</button>
+          <button class="btn btn-sm" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+async function updateCategory(id) {
+  const name = document.getElementById('modalCatName').value;
+  const description = document.getElementById('modalCatDesc').value;
+  const display_order = parseInt(document.getElementById('modalCatOrder').value) || 0;
+  
+  if (!name) { showToast('Name is required'); return; }
+  
+  const res = await fetch(`/api/admin/categories/${id}`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, description, display_order })
+  });
+  if (res.ok) {
+    showToast('Category updated');
+    document.querySelector('.modal-backdrop')?.remove();
+    loadCategories();
+    loadCategoriesForFilter();
+  } else {
+    showToast('Failed to update');
+  }
+}
+
+async function deleteCategory(id) {
+  if (!confirm('Delete this category?')) return;
+  const res = await fetch(`/api/admin/categories/${id}`, {
+    method: 'DELETE',
+    credentials: 'include'
+  });
+  if (res.ok) {
+    showToast('Category deleted');
+    loadCategories();
+    loadCategoriesForFilter();
+  } else {
+    showToast('Failed to delete');
+  }
+}
+
+/* ═══ PRODUCTS ═══ */
+let allProducts = [];
+
+async function loadProducts() {
+  try {
+    const res = await fetch('/api/admin/products', { credentials: 'include' });
+    if (res.ok) {
+      allProducts = await res.json();
+      renderProducts(allProducts);
+    }
+  } catch (err) { console.error(err); }
+}
+
+function renderProducts(products) {
+  const tbody = document.getElementById('productsTableBody');
+  if (products.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--color-ivory-dim);padding:2rem;">No products yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = products.map(p => `
+    <tr data-product-id="${p.id}">
+      <td><div class="row-product"><div style="width:38px;height:38px;border-radius:6px;background:var(--color-surface-raised);display:flex;align-items:center;justify-content:center;font-size:16px;">▦</div><div><div class="row-product-name">${p.name}</div><div class="row-product-cat">${p.category_name || 'Uncategorized'}</div></div></div></td>
+      <td>${p.category_name || '—'}</td>
+      <td>$${Number(p.price).toFixed(2)}</td>
+      <td>${p.stock_quantity}</td>
+      <td>${p.is_3d_featured ? '<span class="badge badge-success">Attached</span>' : '<span class="badge badge-warn">Missing</span>'}</td>
+      <td><span class="toggle ${p.is_active ? 'is-on' : ''}" data-product-id="${p.id}" data-field="is_active"></span></td>
+      <td class="row-actions">
+        <button class="icon-action" onclick="openEditProductModal('${p.id}')">✎</button>
+        <button class="icon-action" onclick="toggleProductField('${p.id}','is_3d_featured',true)">◐</button>
+        <button class="icon-action" onclick="deleteProduct('${p.id}')">✕</button>
+      </td>
+    </tr>
+  `).join('');
+  // Bind toggle events
+  document.querySelectorAll('#productsTableBody .toggle').forEach(t => {
+    t.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const isOn = t.classList.toggle('is-on');
+      const productId = t.dataset.productId;
+      const field = t.dataset.field;
+      await toggleProductField(productId, field, isOn);
+    });
+  });
+}
+
+function filterProducts() {
+  const search = document.getElementById('productSearch').value.toLowerCase();
+  const category = document.getElementById('categoryFilter').value;
+  let filtered = allProducts;
+  if (search) filtered = filtered.filter(p => p.name.toLowerCase().includes(search));
+  if (category) filtered = filtered.filter(p => p.category_id === category);
+  renderProducts(filtered);
+}
+
+/* ═══ PRODUCT CRUD ═══ */
+async function toggleProductField(productId, field, value) {
+  try {
+    const res = await fetch(`/api/admin/products/${productId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ [field]: value })
+    });
+    if (res.ok) {
+      showToast('Product updated');
+      loadProducts();
+    } else {
+      showToast('Failed to update');
+    }
+  } catch (err) {
+    showToast('Network error');
+  }
+}
+
+function openAddProductModal() {
+  const html = `
+    <div class="modal-backdrop" onclick="this.remove()">
+      <div class="modal-shell" onclick="event.stopPropagation()">
+        <h3 style="margin-bottom:1rem;">Add Product</h3>
+        <div class="field"><label>Product name</label><input type="text" id="modalProdName" placeholder="e.g. Smoked Eggplant"></div>
+        <div class="field-row">
+          <div class="field"><label>Category</label><select id="modalProdCategory"><option value="">— No category —</option></select></div>
+          <div class="field"><label>Price</label><input type="number" id="modalProdPrice" placeholder="0.00" step="0.01"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Stock quantity</label><input type="number" id="modalProdStock" placeholder="0"></div>
+          <div class="field"><label>Tags</label><input type="text" id="modalProdTags" placeholder="gluten-free, vegetarian"></div>
+        </div>
+        <div class="field"><label>Description</label><textarea id="modalProdDesc" placeholder="Short product description…"></textarea></div>
+        <div class="field"><label>Image URLs (one per line)</label><textarea id="modalProdImages" placeholder="https://…"></textarea></div>
+        <div style="display:flex; gap:1rem; margin-top:0.5rem; flex-wrap:wrap;">
+          <label style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--color-ivory-dim);">
+            <input type="checkbox" id="modalProdActive" checked /> Active
+          </label>
+          <label style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--color-ivory-dim);">
+            <input type="checkbox" id="modalProd3d" /> 3D Featured
+          </label>
+          <label style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--color-ivory-dim);">
+            <input type="checkbox" id="modalProdChef" /> Chef's Pick
+          </label>
+          <label style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--color-ivory-dim);">
+            <input type="checkbox" id="modalProdBest" /> Best Seller
+          </label>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:1.5rem;">
+          <button class="btn btn-primary btn-sm" onclick="saveNewProduct()">Save product</button>
+          <button class="btn btn-sm" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+  // Load categories
+  fetch('/api/admin/categories', { credentials: 'include' })
+    .then(res => res.json())
+    .then(cats => {
+      const select = document.getElementById('modalProdCategory');
+      select.innerHTML = '<option value="">— No category —</option>' + 
+        cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    });
+}
+
+async function saveNewProduct() {
+  const payload = {
+    name: document.getElementById('modalProdName').value,
+    category_id: document.getElementById('modalProdCategory').value || null,
+    price: parseFloat(document.getElementById('modalProdPrice').value) || 0,
+    stock_quantity: parseInt(document.getElementById('modalProdStock').value) || 0,
+    tags: document.getElementById('modalProdTags').value,
+    description: document.getElementById('modalProdDesc').value,
+    image_urls: document.getElementById('modalProdImages').value.split('\n').filter(u => u.trim()),
+    is_active: document.getElementById('modalProdActive').checked,
+    is_3d_featured: document.getElementById('modalProd3d').checked,
+    is_chef_pick: document.getElementById('modalProdChef').checked,
+    is_best_seller: document.getElementById('modalProdBest').checked
+  };
+  const res = await fetch('/api/admin/products', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (res.ok) {
+    showToast('Product saved');
+    document.querySelector('.modal-backdrop')?.remove();
+    loadProducts();
+  } else {
+    showToast('Failed to save');
+  }
+}
+
+function openEditProductModal(id) {
+  const product = allProducts.find(p => p.id === id);
+  if (!product) return;
+  
+  const html = `
+    <div class="modal-backdrop" onclick="this.remove()">
+      <div class="modal-shell" onclick="event.stopPropagation()">
+        <h3 style="margin-bottom:1rem;">Edit Product</h3>
+        <div class="field"><label>Product name</label><input type="text" id="modalEditProdName" value="${product.name}"></div>
+        <div class="field-row">
+          <div class="field"><label>Category</label><select id="modalEditProdCategory"><option value="">— No category —</option></select></div>
+          <div class="field"><label>Price</label><input type="number" id="modalEditProdPrice" value="${product.price}" step="0.01"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Stock quantity</label><input type="number" id="modalEditProdStock" value="${product.stock_quantity}"></div>
+          <div class="field"><label>Tags</label><input type="text" id="modalEditProdTags" value="${(product.dietary_tags || []).join(', ')}"></div>
+        </div>
+        <div class="field"><label>Description</label><textarea id="modalEditProdDesc">${product.description || ''}</textarea></div>
+        <div class="field"><label>Image URLs (one per line)</label><textarea id="modalEditProdImages">${(product.images || []).join('\n')}</textarea></div>
+        <div style="display:flex; gap:1rem; margin-top:0.5rem; flex-wrap:wrap;">
+          <label style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--color-ivory-dim);">
+            <input type="checkbox" id="modalEditProdActive" ${product.is_active ? 'checked' : ''} /> Active
+          </label>
+          <label style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--color-ivory-dim);">
+            <input type="checkbox" id="modalEditProd3d" ${product.is_3d_featured ? 'checked' : ''} /> 3D Featured
+          </label>
+          <label style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--color-ivory-dim);">
+            <input type="checkbox" id="modalEditProdChef" ${product.is_chef_pick ? 'checked' : ''} /> Chef's Pick
+          </label>
+          <label style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--color-ivory-dim);">
+            <input type="checkbox" id="modalEditProdBest" ${product.is_best_seller ? 'checked' : ''} /> Best Seller
+          </label>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:1.5rem;">
+          <button class="btn btn-primary btn-sm" onclick="updateProduct('${id}')">Update product</button>
+          <button class="btn btn-sm" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+  
+  // Load categories
+  fetch('/api/admin/categories', { credentials: 'include' })
+    .then(res => res.json())
+    .then(cats => {
+      const select = document.getElementById('modalEditProdCategory');
+      select.innerHTML = '<option value="">— No category —</option>' + 
+        cats.map(c => `<option value="${c.id}" ${c.id === product.category_id ? 'selected' : ''}>${c.name}</option>`).join('');
+    });
+}
+
+async function updateProduct(id) {
+  const payload = {
+    name: document.getElementById('modalEditProdName').value,
+    category_id: document.getElementById('modalEditProdCategory').value || null,
+    price: parseFloat(document.getElementById('modalEditProdPrice').value) || 0,
+    stock_quantity: parseInt(document.getElementById('modalEditProdStock').value) || 0,
+    tags: document.getElementById('modalEditProdTags').value,
+    description: document.getElementById('modalEditProdDesc').value,
+    image_urls: document.getElementById('modalEditProdImages').value.split('\n').filter(u => u.trim()),
+    is_active: document.getElementById('modalEditProdActive').checked,
+    is_3d_featured: document.getElementById('modalEditProd3d').checked,
+    is_chef_pick: document.getElementById('modalEditProdChef').checked,
+    is_best_seller: document.getElementById('modalEditProdBest').checked
+  };
+  const res = await fetch(`/api/admin/products/${id}`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (res.ok) {
+    showToast('Product updated');
+    document.querySelector('.modal-backdrop')?.remove();
+    loadProducts();
+  } else {
+    showToast('Failed to update');
+  }
+}
+
+async function deleteProduct(id) {
+  if (!confirm('Delete this product?')) return;
+  const res = await fetch(`/api/admin/products/${id}`, {
+    method: 'DELETE',
+    credentials: 'include'
+  });
+  if (res.ok) {
+    showToast('Product deleted');
+    loadProducts();
+  } else {
+    showToast('Failed to delete');
+  }
+}
+
+async function loadFeaturedProducts() {
+  try {
+    const res = await fetch('/api/admin/products', { credentials: 'include' });
+    if (res.ok) {
+      const products = await res.json();
+      const tbody = document.getElementById('featuredProductsBody');
+      const featured = products.filter(p => p.is_active);
+      if (featured.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--color-ivory-dim);padding:1rem;">No active products to feature.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = featured.map(p => `
+        <tr>
+          <td>${p.name}</td>
+          <td><span class="toggle ${p.is_3d_featured ? 'is-on' : ''}" data-product-id="${p.id}" data-field="is_3d_featured"></span></td>
+          <td><span class="toggle ${p.is_chef_pick ? 'is-on' : ''}" data-product-id="${p.id}" data-field="is_chef_pick"></span></td>
+          <td><span class="toggle ${p.is_best_seller ? 'is-on' : ''}" data-product-id="${p.id}" data-field="is_best_seller"></span></td>
+        </tr>
+      `).join('');
+      // Bind toggle events
+      document.querySelectorAll('#featuredProductsBody .toggle').forEach(t => {
+        t.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const isOn = t.classList.toggle('is-on');
+          const productId = t.dataset.productId;
+          const field = t.dataset.field;
+          await toggleProductField(productId, field, isOn);
+        });
+      });
+    }
+  } catch (err) { console.error(err); }
+}
+
+function openAddSectionModal() {
+  const html = `
+    <div class="modal-backdrop" onclick="this.remove()">
+      <div class="modal-shell" onclick="event.stopPropagation()">
+        <h3 style="margin-bottom:1rem;">Add Featured Section</h3>
+        <div class="field"><label>Section Key (unique identifier)</label><input type="text" id="modalSectionKey" placeholder="e.g. hero_banner"></div>
+        <div class="field"><label>Title</label><input type="text" id="modalSectionTitle" placeholder="e.g. Hero Banner"></div>
+        <div class="field"><label>Display Order</label><input type="number" id="modalSectionOrder" value="0"></div>
+        <div style="display:flex; gap:1rem; margin-top:0.5rem;">
+          <label style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--color-ivory-dim);">
+            <input type="checkbox" id="modalSectionVisible" checked /> Visible
+          </label>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:1.5rem;">
+          <button class="btn btn-primary btn-sm" onclick="saveFeaturedSection()">Save section</button>
+          <button class="btn btn-sm" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+async function saveFeaturedSection() {
+  const section_key = document.getElementById('modalSectionKey').value.trim();
+  const title = document.getElementById('modalSectionTitle').value;
+  const display_order = parseInt(document.getElementById('modalSectionOrder').value) || 0;
+  const is_visible = document.getElementById('modalSectionVisible').checked;
+  
+  if (!section_key) { showToast('Section key is required'); return; }
+  
+  const res = await fetch('/api/admin/featured-sections', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ section_key, title, display_order, is_visible, config: {} })
+  });
+  if (res.ok) {
+    showToast('Section added');
+    document.querySelector('.modal-backdrop')?.remove();
+    loadFeaturedSections();
+  } else {
+    showToast('Failed to add section');
+  }
+}
+
+async function deleteFeaturedSection(id) {
+  if (!confirm('Delete this section?')) return;
+  const res = await fetch(`/api/admin/featured-sections/${id}`, {
+    method: 'DELETE',
+    credentials: 'include'
+  });
+  if (res.ok) {
+    showToast('Section deleted');
+    loadFeaturedSections();
+  } else {
+    showToast('Failed to delete');
+  }
+}
+
+/* ═══ 3D MODELS ═══ */
+async function loadModels() {
+  try {
+    const res = await fetch('/api/admin/models', { credentials: 'include' });
+    const grid = document.getElementById('modelGrid');
+    if (res.ok) {
+      const models = await res.json();
+      if (models.length === 0) {
+        grid.innerHTML = `
+          <div style="text-align:center;color:var(--color-ivory-dim);padding:2rem;grid-column:1/-1;">No 3D models uploaded yet.</div>
+          <div class="upload-tile" style="grid-column:1/-1;" onclick="openAddModelModal()">
+            <span style="font-size:20px;">＋</span>
+            Add 3D model URL
+          </div>
+        `;
+        return;
+      }
+      grid.innerHTML = models.map(m => `
+        <div class="model-card">
+          <div class="model-thumb">◆</div>
+          <div class="model-body">
+            <div class="model-name">${m.filename}</div>
+            <div class="model-meta">${m.file_size ? (m.file_size / 1024).toFixed(1) + ' KB · ' : ''}${m.product_name ? 'assigned to ' + m.product_name : 'unassigned'}</div>
+            <div style="display:flex; gap:4px; margin-top:6px;">
+              <button class="icon-action" onclick="openEditModelModal('${m.id}')" style="font-size:10px;">✎</button>
+              <button class="icon-action" onclick="deleteModel('${m.id}')" style="font-size:10px;">✕</button>
+            </div>
+          </div>
+        </div>
+      `).join('') + `
+        <div class="upload-tile" onclick="openAddModelModal()">
+          <span style="font-size:20px;">＋</span>
+          Add 3D model URL
+        </div>
+      `;
+    }
+  } catch (err) {
+    console.error('Failed to load models:', err);
+  }
+}
+
+function openAddModelModal() {
+  const html = `
+    <div class="modal-backdrop" onclick="this.remove()">
+      <div class="modal-shell" onclick="event.stopPropagation()">
+        <h3 style="margin-bottom:1rem;">Add 3D Model</h3>
+        <div class="field"><label>Filename</label><input type="text" id="modalModelName" placeholder="e.g. cake.glb"></div>
+        <div class="field"><label>Model URL</label><input type="url" id="modalModelUrl" placeholder="https://example.com/model.glb"></div>
+        <div class="field"><label>Model Type</label><select id="modalModelType"><option value="">— Select type —</option><option>glb</option><option>usdz</option><option>gltf</option></select></div>
+        <div class="field"><label>File Size (KB)</label><input type="number" id="modalModelSize" placeholder="146"></div>
+        <div class="field"><label>Assign to Product</label><select id="modalModelProduct"><option value="">— Unassigned —</option></select></div>
+        <div style="display:flex; gap:10px; margin-top:1.5rem;">
+          <button class="btn btn-primary btn-sm" onclick="saveModel()">Save model</button>
+          <button class="btn btn-sm" onclick="this.closest('.modal-backdrop').remove()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+  
+  // Load products for assignment
+  fetch('/api/admin/products', { credentials: 'include' })
+    .then(res => res.json())
+    .then(products => {
+      const select = document.getElementById('modalModelProduct');
+      select.innerHTML = '<option value="">— Unassigned —</option>' + 
+        products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    });
+}
+
+async function saveModel() {
+  const filename = document.getElementById('modalModelName').value;
+  const file_url = document.getElementById('modalModelUrl').value;
+  const model_type = document.getElementById('modalModelType').value || null;
+  const file_size = parseInt(document.getElementById('modalModelSize').value) || null;
+  const assigned_product_id = document.getElementById('modalModelProduct').value || null;
+  
+  if (!filename || !file_url) { showToast('Filename and URL are required'); return; }
+  
+  const res = await fetch('/api/admin/models', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename, file_url, file_size, model_type, assigned_product_id, metadata: {} })
+  });
+  if (res.ok) {
+    showToast('Model added');
+    document.querySelector('.modal-backdrop')?.remove();
+    loadModels();
+  } else {
+    showToast('Failed to add model');
+  }
+}
+
+function openEditModelModal(id) {
+  showToast('Edit model ' + id + ' - fetch and populate form');
+}
+
+async function deleteModel(id) {
+  if (!confirm('Delete this 3D model?')) return;
+  const res = await fetch(`/api/admin/models/${id}`, {
+    method: 'DELETE',
+    credentials: 'include'
+  });
+  if (res.ok) {
+    showToast('Model deleted');
+    loadModels();
+  } else {
+    showToast('Failed to delete');
+  }
+}
+
+/* ═══ USERS & ROLES ═══ */
+async function loadUsersAndRoles() {
+  try {
+    const [usersRes, rolesRes] = await Promise.all([
+      fetch('/api/admin/users', { credentials: 'include' }),
+      fetch('/api/admin/roles', { credentials: 'include' })
+    ]);
+    
+    let rolesData = [];
+    if (rolesRes.ok) {
+      rolesData = await rolesRes.json();
+    }
+    
+    if (usersRes.ok) {
+      const users = await usersRes.json();
+      document.getElementById('usersTableBody').innerHTML = users.map(u => `
+        <tr>
+          <td>${u.name}</td>
+          <td>${u.email}</td>
+          <td>
+            <select class="role-select" onchange="updateUserRole('${u.id}', this.value)">
+              <option value="">No role</option>
+              ${rolesData.map(r => 
+                `<option value="${r.name}" ${(u.roles && u.roles[0] === r.name) ? 'selected' : ''}>${r.name}</option>`
+              ).join('')}
+            </select>
+          </td>
+          <td>${u.is_active ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-warn">Inactive</span>'}</td>
+          <td class="row-actions">
+            <button class="icon-action" onclick="toggleUserStatus('${u.id}')">${u.is_active ? '⛔' : '✅'}</button>
+            <button class="icon-action" onclick="deleteUser('${u.id}')">✕</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+    
+    if (rolesData.length > 0) {
+      document.getElementById('rolesTableBody').innerHTML = rolesData.map(r => {
+        const perms = r.permissions || [];
+        const hasPermission = (perm) => {
+          if (perms.includes('*')) return true;
+          return perms.some(p => p.startsWith(perm + ':'));
+        };
+        return `<tr>
+          <td><strong>${r.name}</strong></td>
+          <td>${hasPermission('products') ? '✓' : '—'}</td>
+          <td>${hasPermission('site') || hasPermission('content') ? '✓' : '—'}</td>
+          <td>${hasPermission('users') ? '✓' : '—'}</td>
+          <td>${hasPermission('orders') ? '✓' : '—'}</td>
+        </tr>`;
+      }).join('');
+    }
+  } catch (err) { 
+    console.error('Error loading users and roles:', err); 
+  }
+}
+
+async function updateUserRole(userId, roleName) {
+  try {
+    const res = await fetch(`/api/admin/users/${userId}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: roleName || null })
+    });
+    if (res.ok) {
+      showToast('User role updated');
+    } else {
+      showToast('Failed to update role');
+    }
+  } catch (err) { showToast('Network error'); }
+}
+
+async function toggleUserStatus(userId) {
+  const res = await fetch(`/api/admin/users/${userId}`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_active: null })
+  });
+  loadUsersAndRoles();
+}
+
+async function deleteUser(userId) {
+  if (!confirm('Delete this user?')) return;
+  const res = await fetch(`/api/admin/users/${userId}`, {
+    method: 'DELETE',
+    credentials: 'include'
+  });
+  if (res.ok) {
+    showToast('User deleted');
+    loadUsersAndRoles();
+  } else {
+    showToast('Failed to delete user');
+  }
+}
+
+function openInviteUserModal() {
+  showToast('Invite user - email integration needed');
+}
+
+/* ═══ CONTACT ═══ */
+/* ═══ SITE SETTINGS ═══ */
+let siteSettingsData = {};
+
+async function loadSiteSettingsPanel() {
+  try {
+    const res = await fetch('/api/admin/site-settings', { credentials: 'include' });
+    if (res.ok) {
+      siteSettingsData = await res.json();
+      document.getElementById('site_name').value = siteSettingsData.site_name || '';
+      document.getElementById('site_tagline').value = siteSettingsData.tagline || '';
+      document.getElementById('site_logo_url').value = siteSettingsData.logo_url || '';
+      updateSiteLogoPreview(siteSettingsData.logo_url || '');
+    }
+  } catch (err) { console.error('Failed to load site settings:', err); }
+}
+
+function updateSiteLogoPreview(url) {
+  const preview = document.getElementById('site_logo_preview');
+  preview.innerHTML = url
+    ? `<img src="${escapeHtml(url)}" style="width:100%;height:100%;object-fit:contain;">`
+    : `<span style="color:var(--color-ivory-dim);font-size:10px;">No logo</span>`;
+}
+
+async function handleSiteLogoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result.split(',')[1];
+    updateSiteLogoPreview(e.target.result);
+    try {
+      const res = await fetch('/api/admin/upload-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ image_data: base64 })
+      });
+      const data = await res.json();
+      if (data.url) {
+        document.getElementById('site_logo_url').value = data.url;
+        showToast('Logo uploaded (click "Save site settings" to persist)');
+      } else {
+        showToast('Upload failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch (err) {
+      showToast('Upload failed: ' + err.message);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveSiteSettingsPanel() {
+  // Merge onto the currently loaded object rather than sending only these
+  // three fields - site_settings also has featured_title and the contact
+  // fields on it, and the PUT endpoint overwrites whatever it's given.
+  const merged = {
+    ...siteSettingsData,
+    site_name: document.getElementById('site_name').value,
+    tagline: document.getElementById('site_tagline').value,
+    logo_url: document.getElementById('site_logo_url').value,
+  };
+  try {
+    const res = await fetch('/api/admin/site-settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(merged)
+    });
+    if (res.ok) {
+      siteSettingsData = merged;
+      showToast('Site settings saved');
+    } else {
+      showToast('Failed to save site settings');
+    }
+  } catch (err) {
+    showToast('Failed to save: ' + err.message);
+  }
+}
+
+async function loadContactDetails() {
+  try {
+    const res = await fetch('/api/admin/contact', { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.phone) document.getElementById('contact_phone').value = data.phone;
+      if (data.email) document.getElementById('contact_email').value = data.email;
+      if (data.address) document.getElementById('contact_address').value = data.address;
+      if (data.google_maps_url) document.getElementById('contact_maps').value = data.google_maps_url;
+      if (data.hours_weekdays) document.getElementById('contact_weekdays').value = data.hours_weekdays;
+      if (data.hours_weekends) document.getElementById('contact_weekends').value = data.hours_weekends;
+    }
+  } catch (err) { console.error(err); }
+}
+
+async function saveContactDetails() {
+  const payload = {
+    phone: document.getElementById('contact_phone').value,
+    email: document.getElementById('contact_email').value,
+    address: document.getElementById('contact_address').value,
+    google_maps_url: document.getElementById('contact_maps').value,
+    hours_weekdays: document.getElementById('contact_weekdays').value,
+    hours_weekends: document.getElementById('contact_weekends').value,
+  };
+  const res = await fetch('/api/admin/contact', {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (res.ok) showToast('Contact details saved');
+  else showToast('Failed to save');
+}
+
+/* ═══ NAVIGATION ═══ */
+const navItems = document.querySelectorAll('.nav-item');
+const panels = document.querySelectorAll('.panel-view');
+const topbarTitle = document.getElementById('topbarTitle');
+
+navItems.forEach(item => {
+  item.addEventListener('click', () => {
+    navItems.forEach(n => n.classList.remove('is-active'));
+    item.classList.add('is-active');
+    panels.forEach(p => p.classList.remove('is-active'));
+    const panel = document.getElementById('panel-' + item.dataset.panel);
+    if (panel) panel.classList.add('is-active');
+    topbarTitle.textContent = item.textContent.trim();
+    
+    // Load data when switching to hero-slider panel
+    if (item.dataset.panel === 'hero-slider') {
+      loadHeroSlides();
+    }
+    if (item.dataset.panel === 'testimonials') {
+      loadTestimonials();
+    }
+    if (item.dataset.panel === 'live-editor') {
+      loadLiveEditorFields();
+    }
+    if (item.dataset.panel === 'site-settings') {
+      loadSiteSettingsPanel();
+    }
+  });
+});
+
+/* ═══ PRESET SWATCHES ═══ */
+document.querySelectorAll('.preset-swatch').forEach((s, i, arr) => {
+  s.addEventListener('click', () => {
+    arr.forEach(x => x.classList.remove('is-active'));
+    s.classList.add('is-active');
+  });
+});
+
+/* ═══ THEME PRESETS ═══ */
+const THEME_PRESETS = {
+  warm: {
+    name: 'Warm',
+    color_background: '#17140F',
+    color_surface: '#211C15',
+    color_ivory: '#F3ECDD',
+    color_amber: '#E3A63D',
+    color_ember: '#C2542A',
+    color_line: 'rgba(243,236,221,0.12)'
+  },
+  cool: {
+    name: 'Cool',
+    color_background: '#0F1417',
+    color_surface: '#1A2126',
+    color_ivory: '#E8EDF0',
+    color_amber: '#3D9AE3',
+    color_ember: '#1A6FA3',
+    color_line: 'rgba(232,237,240,0.12)'
+  },
+  dark: {
+    name: 'Dark',
+    color_background: '#141017',
+    color_surface: '#1F1A26',
+    color_ivory: '#E8E0F0',
+    color_amber: '#A63DE3',
+    color_ember: '#6F1AA3',
+    color_line: 'rgba(232,224,240,0.12)'
+  },
+  light: {
+    name: 'Light',
+    color_background: '#F4F1EA',
+    color_surface: '#E8E4DB',
+    color_ivory: '#1A1714',
+    color_amber: '#C2542A',
+    color_ember: '#8A3A1A',
+    color_line: 'rgba(26,23,20,0.12)'
+  }
+};
+
+// Apply a preset to the theme fields
+function applyPreset(presetName) {
+  const preset = THEME_PRESETS[presetName];
+  if (!preset) {
+    console.warn('Preset not found:', presetName);
+    return;
+  }
+  
+  const fieldMap = {
+    'color_background': 'theme_bg',
+    'color_surface': 'theme_surface',
+    'color_ivory': 'theme_ivory',
+    'color_amber': 'theme_amber',
+    'color_ember': 'theme_ember',
+    'color_line': 'theme_line'
+  };
+  
+  // Update each field
+  Object.keys(fieldMap).forEach(dbKey => {
+    const inputId = fieldMap[dbKey];
+    const color = preset[dbKey];
+    const input = document.getElementById(inputId);
+    const swatch = input?.closest('.color-swatch-row')?.querySelector('.color-swatch');
+    const picker = document.querySelector(`.color-picker[data-target="${inputId}"]`);
+    
+    if (input) input.value = color;
+    if (swatch) swatch.style.background = color;
+    if (picker) picker.value = color;
+    
+    // Apply to preview
+    applyThemeColorToPreview(inputId, color);
+  });
+  
+  // Update active state on presets
+  document.querySelectorAll('.preset-item').forEach(el => {
+    const swatch = el.querySelector('.preset-swatch');
+    if (swatch) {
+      swatch.classList.remove('is-active');
+      if (el.dataset.preset === presetName) {
+        swatch.classList.add('is-active');
+      }
+    }
+  });
+  
+  showToast(`🎨 Applied "${preset.name}" theme`);
+}
+
+// Initialize preset click handlers (fallback for onclick)
+document.addEventListener('DOMContentLoaded', function() {
+  // The onclick attributes already handle clicks
+  // But we also need to handle the is-active state on load
+  const activePreset = document.querySelector('.preset-swatch.is-active');
+  if (activePreset) {
+    const parent = activePreset.closest('.preset-item');
+    if (parent) {
+      // Ensure the active state is correct
+    }
+  }
+});
+/* ═══ TOAST ═══ */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  if (!t) {
+    const toast = document.createElement('div');
+    toast.id = 'toast';
+    toast.className = 'toast';
+    document.body.appendChild(toast);
+    setTimeout(() => showToast(msg), 50);
+    return;
+  }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+/* ═══ INIT ═══ */
+checkAuth();
+</script>
+</body>
+</html>

@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GraphicyCafe</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+
+  <style>
+    :root {
+      --color-bg: #17140F;
+      --color-surface: #211C15;
+      --color-surface-raised: #2B2419;
+      --color-ivory: #F3ECDD;
+      --color-ivory-dim: #C9BFA9;
+      --color-amber: #E3A63D;
+      --color-amber-dim: #B9822B;
+      --color-ember: #C2542A;
+      --color-line: rgba(243, 236, 221, 0.12);
+      --color-line-strong: rgba(243, 236, 221, 0.22);
+
+      --font-display: 'Fraunces', 'Georgia', serif;
+      --font-body: 'Inter', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SFMono-Regular', monospace;
+
+      --radius-lg: 20px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--color-bg);
+      color: var(--color-ivory);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+    }
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-amber);
+    }
+
+    .section {
+      padding: 56px 24px;
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+    .section-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 30px;
+      margin: 6px 0 0;
+    }
+    .section-link {
+      font-size: 13px;
+      color: var(--color-ivory-dim);
+      border-bottom: 1px solid var(--color-line-strong);
+      padding-bottom: 2px;
+      white-space: nowrap;
+    }
+
+    /* ----- header with hamburger ----- */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--color-line);
+      background: rgba(23, 20, 15, 0.88);
+      backdrop-filter: blur(8px);
+      flex-wrap: wrap;
+    }
+    .site-mark {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 19px;
+      letter-spacing: 0.01em;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      font-size: 14px;
+      color: var(--color-ivory-dim);
+    }
+    .nav-links a:hover { color: var(--color-ivory); }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .icon-btn {
+      position: relative;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--color-line-strong);
+      display: flex; align-items: center; justify-content: center;
+      background: transparent;
+      color: var(--color-ivory);
+      font-size: 18px;
+    }
+    .cart-count {
+      position: absolute;
+      top: -4px; right: -4px;
+      background: var(--color-ember);
+      color: var(--color-ivory);
+      font-size: 10px;
+      font-family: var(--font-mono);
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 28px;
+      height: 20px;
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      margin-left: 16px;
+    }
+    .hamburger span {
+      display: block;
+      height: 2px;
+      width: 100%;
+      background: var(--color-ivory);
+      border-radius: 2px;
+      transition: 0.2s;
+    }
+
+    .mobile-nav-overlay {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 30px 20px 40px;
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-line);
+      width: 100%;
+      order: 10;
+    }
+    .mobile-nav-overlay.is-open {
+      display: flex;
+    }
+    .mobile-nav-overlay a {
+      font-size: 18px;
+      color: var(--color-ivory-dim);
+      padding: 6px 0;
+      border-bottom: 1px solid transparent;
+    }
+    .mobile-nav-overlay a:hover {
+      color: var(--color-ivory);
+      border-bottom-color: var(--color-amber);
+    }
+
+    @media (max-width: 760px) {
+      .nav-links {
+        display: none;
+      }
+      .hamburger {
+        display: flex;
+      }
+      .site-header {
+        flex-wrap: wrap;
+      }
+      .header-actions {
+        margin-left: auto;
+      }
+    }
+
+    /* Hero slider */
+    .hero-slider {
+      position: relative;
+      height: 480px;
+      overflow: hidden;
+    }
+    .hero-slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      background-size: cover;
+      background-position: center;
+    }
+    .hero-slide.is-active { opacity: 1; }
+    .hero-slide::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, rgba(23,20,15,0.92) 0%, rgba(23,20,15,0.55) 48%, rgba(23,20,15,0.2) 100%);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      padding: 0 24px 0 48px;
+      max-width: 560px;
+    }
+    .hero-title {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 46px;
+      line-height: 1.08;
+      margin: 12px 0 14px;
+    }
+    .hero-sub {
+      color: var(--color-ivory-dim);
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 26px;
+      max-width: 420px;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--color-amber);
+      color: #211405;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 13px 22px;
+      border-radius: var(--radius-sm);
+      border: none;
+    }
+    .hero-dots {
+      position: absolute;
+      bottom: 24px;
+      left: 48px;
+      z-index: 2;
+      display: flex;
+      gap: 8px;
+    }
+    .hero-dot {
+      width: 22px; height: 3px;
+      background: var(--color-line-strong);
+      border: none;
+      border-radius: 2px;
+    }
+    .hero-dot.is-active { background: var(--color-amber); }
+
+    /* Offers grid */
+    .offers-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .offer-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-line);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      transition: border-color 0.2s ease;
+    }
+    .offer-card:hover { border-color: var(--color-amber-dim); }
+    .offer-title {
+      font-family: var(--font-display);
+      font-size: 18px;
+      margin: 10px 0 6px;
+    }
+    .offer-desc {
+      font-size: 13px;
+      color: var(--color-ivory-dim);
+      margin: 0 0 14px;
+      line-height: 1.5;
+    }
+    .offer-arrow { color: var(--color-amber); font-size: 13px; }
+
+    /* Category tabs */
+    .cat-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .cat-tab {
+      background: transparent;
+      border: 1px solid var(--color-line-strong);
+      color: var(--color-ivory-dim);
+      font-size: 13px;
+      padding: 9px 16px;
+      border-radius: 999px;
+    }
+    .cat-tab.is-active {
+      background: var(--color-amber);
+      color: #211405;
+      border-color: var(--color-amber);
+      font-weight: 600;
+    }
+
+    .scroll-row {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding-bottom: 8px;
+      margin: 0 -24px;
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+    .scroll-row::-webkit-scrollbar { height: 6px; }
+    .scroll-row::-webkit-scrollbar-thumb { background: var(--color-line-strong); border-radius: 4px; }
+
+    .product-card {
+      scroll-snap-align: start;
+      flex: 0 0 240px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-line);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .product-card img { height: 160px; width: 100%; object-fit: cover; }
+    .product-card-body { padding: 14px 16px; }
+    .product-cat { font-size: 11px; color: var(--color-amber-dim); font-family: var(--font-mono); }
+    .product-name { font-family: var(--font-display); font-size: 16px; margin: 6px 0 4px; }
+    .product-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+    .product-price { font-weight: 600; }
+    .add-btn {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: 1px solid var(--color-line-strong);
+      background: transparent;
+      color: var(--color-ivory);
+      font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* 3D menu cards */
+    .menu3d-card {
+      scroll-snap-align: start;
+      flex: 0 0 260px;
+      background: var(--color-surface-raised);
+      border: 1px solid var(--color-line-strong);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      position: relative;
+    }
+    .menu3d-badge {
+      position: absolute;
+      top: 12px; left: 12px;
+      z-index: 2;
+      background: rgba(23,20,15,0.75);
+      border: 1px solid var(--color-line-strong);
+      color: var(--color-amber);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      padding: 5px 9px;
+      border-radius: 999px;
+    }
+    .menu3d-card model-viewer { width: 100%; height: 190px; --poster-color: transparent; }
+    .menu3d-body { padding: 14px 16px 18px; }
+    .menu3d-hint { font-size: 11px; color: var(--color-ivory-dim); font-family: var(--font-mono); margin-top: 6px; }
+
+    /* Testimonials */
+    .testi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .testi-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-line);
+      border-radius: var(--radius-md);
+      padding: 22px;
+    }
+    .testi-stars { color: var(--color-amber); font-size: 13px; letter-spacing: 2px; }
+    .testi-quote {
+      font-family: var(--font-display);
+      font-size: 16px;
+      line-height: 1.5;
+      margin: 12px 0 18px;
+    }
+    .testi-person { display: flex; align-items: center; gap: 10px; }
+    .testi-avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: var(--color-ember);
+      color: var(--color-ivory);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600;
+    }
+    .testi-name { font-size: 13px; font-weight: 600; }
+    .testi-role { font-size: 12px; color: var(--color-ivory-dim); }
+
+    /* Featured banner */
+    .featured {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      background: var(--color-surface-raised);
+      border: 1px solid var(--color-line-strong);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .featured-media { min-height: 320px; background-size: cover; background-position: center; }
+    .featured-copy { padding: 40px; display: flex; flex-direction: column; justify-content: center; }
+    .featured-title { font-family: var(--font-display); font-size: 30px; margin: 10px 0 12px; }
+    .featured-desc { color: var(--color-ivory-dim); font-size: 14px; line-height: 1.6; margin-bottom: 22px; max-width: 380px; }
+
+    /* Trust strip */
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 32px 24px;
+      border-top: 1px solid var(--color-line);
+      border-bottom: 1px solid var(--color-line);
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+    .trust-item { text-align: center; }
+    .trust-icon { font-size: 20px; margin-bottom: 8px; }
+    .trust-label { font-size: 12px; color: var(--color-ivory-dim); }
+
+    /* Newsletter */
+    .newsletter {
+      background: var(--color-surface);
+      border: 1px solid var(--color-line);
+      border-radius: var(--radius-lg);
+      padding: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+      max-width: 1120px;
+      margin: 0 auto 56px;
+    }
+    .newsletter-title { font-family: var(--font-display); font-size: 22px; margin: 6px 0 4px; }
+    .newsletter-desc { font-size: 13px; color: var(--color-ivory-dim); }
+    .newsletter-form { display: flex; gap: 10px; }
+    .newsletter-form input {
+      background: var(--color-bg);
+      border: 1px solid var(--color-line-strong);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      color: var(--color-ivory);
+      font-size: 13px;
+      min-width: 220px;
+    }
+
+    /* Footer */
+    .site-footer {
+      border-top: 1px solid var(--color-line);
+      padding: 48px 24px 28px;
+    }
+    .footer-grid {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1fr 1fr;
+      gap: 24px;
+    }
+    .footer-col-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-ivory-dim);
+      margin-bottom: 14px;
+    }
+    .footer-links { display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: var(--color-ivory-dim); }
+    .footer-bottom {
+      max-width: 1120px;
+      margin: 32px auto 0;
+      padding-top: 20px;
+      border-top: 1px solid var(--color-line);
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--color-ivory-dim);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .loading {
+      text-align: center;
+      color: var(--color-ivory-dim);
+      padding: 40px 20px;
+      font-size: 14px;
+    }
+
+    @media (max-width: 860px) {
+      .offers-grid, .testi-grid { grid-template-columns: repeat(2, 1fr); }
+      .featured { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+      .trust-strip { grid-template-columns: repeat(2, 1fr); }
+      .hero-title { font-size: 32px; }
+      .hero-content { padding-left: 24px; }
+    }
+    @media (max-width: 520px) {
+      .offers-grid, .testi-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .trust-strip { grid-template-columns: 1fr 1fr; }
+      .hero-title { font-size: 28px; }
+      .section-title { font-size: 24px; }
+      .newsletter { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<header class="site-header" id="siteHeader">
+  <span class="site-mark" id="siteBrand">GraphicyCafe</span>
+  <nav class="nav-links" id="navLinks">
+    <a href="#" id="navLink1">Menu</a>
+    <a href="#" id="navLink2">Offers</a>
+    <a href="#" id="navLink3">3D Preview</a>
+    <a href="#" id="navLink4">About</a>
+  </nav>
+  <div class="header-actions">
+    <button class="icon-btn" aria-label="Search">⌕</button>
+    <button class="icon-btn" aria-label="Account">◐</button>
+    <button class="icon-btn" aria-label="Cart">🛒<span class="cart-count" id="cartCount">0</span></button>
+    <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-nav-overlay" id="mobileNav">
+    <a href="#" id="mobileNavLink1">Menu</a>
+    <a href="#" id="mobileNavLink2">Offers</a>
+    <a href="#" id="mobileNavLink3">3D Preview</a>
+    <a href="#" id="mobileNavLink4">About</a>
+  </div>
+</header>
+
+<!-- ═══ HERO SLIDER ═══ -->
+<section class="hero-slider" id="heroSlider">
+  <div class="loading">Loading...</div>
+</section>
+
+<!-- ═══ OFFERS (Hardcoded) ═══ -->
+<section class="section" id="offersSection">
+  <div class="section-head">
+    <div>
+      <span class="eyebrow" id="offersEyebrow">Right now</span>
+      <h2 class="section-title" id="offersTitle">Offers & special categories</h2>
+    </div>
+  </div>
+  <div class="offers-grid" id="offersGrid">
+    <div class="offer-card">
+      <span class="eyebrow">Limited</span>
+      <h3 class="offer-title">Weekend special</h3>
+      <p class="offer-desc">15% off robata mains, Friday–Sunday only.</p>
+      <span class="offer-arrow">Shop offer →</span>
+    </div>
+    <div class="offer-card">
+      <span class="eyebrow">Curated</span>
+      <h3 class="offer-title">Chef's picks</h3>
+      <p class="offer-desc">Six dishes our head chef won't stop plating.</p>
+      <span class="offer-arrow">Shop offer →</span>
+    </div>
+    <div class="offer-card">
+      <span class="eyebrow">Rotating</span>
+      <h3 class="offer-title">Seasonal menu</h3>
+      <p class="offer-desc">New ingredients, same fire, every eight weeks.</p>
+      <span class="offer-arrow">Shop offer →</span>
+    </div>
+    <div class="offer-card">
+      <span class="eyebrow">Gifting</span>
+      <h3 class="offer-title">Gift cards</h3>
+      <p class="offer-desc">Delivered instantly, redeemable on any order.</p>
+      <span class="offer-arrow">Shop offer →</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PRODUCTS (Hardcoded - Uses API) ═══ -->
+<section class="section" id="productsSection">
+  <div class="section-head">
+    <div>
+      <span class="eyebrow" id="productsEyebrow">Browse</span>
+      <h2 class="section-title" id="productsTitle">The full menu</h2>
+    </div>
+    <a href="#" class="section-link" id="productsLinkText">View all →</a>
+  </div>
+  <div class="cat-tabs" id="categoryTabs">
+    <div class="loading">Loading categories...</div>
+  </div>
+  <div class="scroll-row" id="productsRow">
+    <div class="loading">Loading products...</div>
+  </div>
+</section>
+
+<!-- ═══ 3D GALLERY (Hardcoded - Uses API) ═══ -->
+<section class="section" id="modelGallerySection">
+  <div class="section-head">
+    <div>
+      <span class="eyebrow" id="galleryEyebrow">Preview before you order</span>
+      <h2 class="section-title" id="galleryTitle">3D menu card gallery</h2>
+    </div>
+    <a href="#" class="section-link" id="galleryLinkText">Open full AR menu →</a>
+  </div>
+  <div class="scroll-row" id="modelGalleryRow">
+    <div class="loading">Loading 3D models...</div>
+  </div>
+</section>
+
+<!-- ═══ FEATURED BANNER (Dynamic from page_content) ═══ -->
+<section class="section" id="featuredBannerSection">
+  <div class="featured" id="featuredBanner">
+    <div class="featured-media" id="featuredMedia" style="background-image:url('https://picsum.photos/seed/ember-feature/900/700')"></div>
+    <div class="featured-copy">
+      <span class="eyebrow" id="featuredEyebrow">This week's feature</span>
+      <h2 class="featured-title" id="featuredTitle">The chef's table</h2>
+      <p class="featured-desc" id="featuredDescription">A seven-course tasting menu built around whatever came off the grill best this week. Every course previewable in AR before you commit.</p>
+      <a href="#" class="btn-primary" id="featuredCtaText" style="width:fit-content;">Reserve the table →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TESTIMONIALS (Hardcoded) ═══ -->
+<section class="section" id="testimonialsSection">
+  <div class="section-head">
+    <div>
+      <span class="eyebrow" id="testimonialsEyebrow">From our guests</span>
+      <h2 class="section-title" id="testimonialsTitle">What people are saying</h2>
+    </div>
+  </div>
+  <div class="testi-grid" id="testimonialsGrid">
+    <div class="loading">Loading testimonials...</div>
+  </div>
+</section>
+
+<!-- ═══ TRUST STRIP (Dynamic from page_content) ═══ -->
+<div id="trustStripContainer"></div>
+
+<!-- ═══ NEWSLETTER (Dynamic from page_content) ═══ -->
+<div id="newsletterContainer"></div>
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="site-footer" id="siteFooter">
+  <div class="footer-grid">
+    <div>
+      <span class="site-mark" id="footerBrand">GraphicyCafe</span>
+      <p style="font-size:13px;color:var(--color-ivory-dim);margin-top:12px;max-width:260px;" id="footerTagline">Wood-fired mains and seasonal plates, now previewable in AR before you order.</p>
+    </div>
+    <div>
+      <div class="footer-col-title">Explore</div>
+      <div class="footer-links" id="footerExplore">
+        <a href="#" id="footerExplore1">Full menu</a>
+        <a href="#" id="footerExplore2">Offers</a>
+        <a href="#" id="footerExplore3">Gift cards</a>
+        <a href="#" id="footerExplore4">3D preview</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Support</div>
+      <div class="footer-links" id="footerSupport">
+        <a href="#" id="footerSupport1">Track order</a>
+        <a href="#" id="footerSupport2">Delivery areas</a>
+        <a href="#" id="footerSupport3">Contact us</a>
+        <a href="#" id="footerSupport4">FAQ</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Hours</div>
+      <div class="footer-links" id="footerHours">
+        <span id="footerHoursWeekdays">Mon–Thu · 5pm–11pm</span>
+        <span id="footerHoursWeekends">Fri–Sun · 12pm–1am</span>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span id="footerCopyright">© 2026 GraphicyCafe</span>
+    <span>Privacy · Terms</span>
+  </div>
+</footer>
+
+<script>
+// ─── LOAD THEME COLORS ───
+document.addEventListener('DOMContentLoaded', async function() {
+  try {
+    const res = await fetch('/api/admin/theme-settings', { credentials: 'include' });
+    if (res.ok) {
+      const theme = await res.json();
+      const colorMap = {
+        'color_background': '--color-bg',
+        'color_surface': '--color-surface',
+        'color_ivory': '--color-ivory',
+        'color_amber': '--color-amber',
+        'color_ember': '--color-ember',
+        'color_line': '--color-line'
+      };
+      Object.keys(colorMap).forEach(dbKey => {
+        if (theme[dbKey]) {
+          document.documentElement.style.setProperty(colorMap[dbKey], theme[dbKey]);
+        }
+      });
+    }
+  } catch (err) {
+    console.warn('Could not load theme colors, using defaults');
+  }
+});
+
+// ─── CONFIG ───
+const API_BASE = '';
+
+// ─── HELPERS ───
+function showToast(msg) {
+  console.log('Toast:', msg);
+}
+
+function getImageUrl(images) {
+  if (!images || images.length === 0) return 'https://picsum.photos/seed/default/400/300';
+  return images[0];
+}
+
+// ─── LOAD ALL PAGE CONTENT ───
+let pageContent = {};
+
+async function loadPageContent() {
+  try {
+    const res = await fetch('/api/public/content/index');
+    if (res.ok) {
+      pageContent = await res.json();
+      renderPageContent();
+    }
+  } catch (err) {
+    console.error('Failed to load page content:', err);
+  }
+}
+
+// ─── RENDER PAGE CONTENT ───
+function renderPageContent() {
+  const content = pageContent;
+
+  // ─── Header ───
+  document.getElementById('siteBrand').textContent = content.site_name || 'GraphicyCafe';
+  document.getElementById('navLink1').textContent = content.nav_1 || 'Menu';
+  document.getElementById('navLink2').textContent = content.nav_2 || 'Offers';
+  document.getElementById('navLink3').textContent = content.nav_3 || '3D Preview';
+  document.getElementById('navLink4').textContent = content.nav_4 || 'About';
+  document.getElementById('mobileNavLink1').textContent = content.nav_1 || 'Menu';
+  document.getElementById('mobileNavLink2').textContent = content.nav_2 || 'Offers';
+  document.getElementById('mobileNavLink3').textContent = content.nav_3 || '3D Preview';
+  document.getElementById('mobileNavLink4').textContent = content.nav_4 || 'About';
+
+  // ─── Offers Section ───
+  document.getElementById('offersEyebrow').textContent = content.offers_eyebrow || 'Right now';
+  document.getElementById('offersTitle').textContent = content.offers_title || 'Offers & special categories';
+
+  // ─── Products Section ───
+  document.getElementById('productsEyebrow').textContent = content.products_eyebrow || 'Browse';
+  document.getElementById('productsTitle').textContent = content.products_title || 'The full menu';
+  document.getElementById('productsLinkText').textContent = content.products_link_text || 'View all →';
+
+  // ─── Gallery Section ───
+  document.getElementById('galleryEyebrow').textContent = content.gallery_eyebrow || 'Preview before you order';
+  document.getElementById('galleryTitle').textContent = content.gallery_title || '3D menu card gallery';
+  document.getElementById('galleryLinkText').textContent = content.gallery_link_text || 'Open full AR menu →';
+
+  // ─── Featured Banner ───
+  document.getElementById('featuredEyebrow').textContent = content.featured_eyebrow || 'This week\'s feature';
+  document.getElementById('featuredTitle').textContent = content.featured_title || 'The chef\'s table';
+  document.getElementById('featuredDescription').textContent = content.featured_description || 'A seven-course tasting menu built around whatever came off the grill best this week. Every course previewable in AR before you commit.';
+  document.getElementById('featuredCtaText').textContent = content.featured_cta_text || 'Reserve the table →';
+  document.getElementById('featuredCtaText').href = content.featured_cta_link || '#';
+
+  // ─── Testimonials Section ───
+  document.getElementById('testimonialsEyebrow').textContent = content.testimonials_eyebrow || 'From our guests';
+  document.getElementById('testimonialsTitle').textContent = content.testimonials_title || 'What people are saying';
+
+  // ─── Trust Strip ───
+  loadTrustStrip();
+
+  // ─── Newsletter ───
+  loadNewsletter();
+
+  // ─── Footer ───
+  document.getElementById('footerBrand').textContent = content.site_name || 'GraphicyCafe';
+  document.getElementById('footerTagline').textContent = content.footer_tagline || 'Wood-fired mains and seasonal plates, now previewable in AR before you order.';
+  document.getElementById('footerExplore1').textContent = content.footer_explore_1 || 'Full menu';
+  document.getElementById('footerExplore2').textContent = content.footer_explore_2 || 'Offers';
+  document.getElementById('footerExplore3').textContent = content.footer_explore_3 || 'Gift cards';
+  document.getElementById('footerExplore4').textContent = content.footer_explore_4 || '3D preview';
+  document.getElementById('footerSupport1').textContent = content.footer_support_1 || 'Track order';
+  document.getElementById('footerSupport2').textContent = content.footer_support_2 || 'Delivery areas';
+  document.getElementById('footerSupport3').textContent = content.footer_support_3 || 'Contact us';
+  document.getElementById('footerSupport4').textContent = content.footer_support_4 || 'FAQ';
+  document.getElementById('footerCopyright').textContent = content.footer_copyright || '© 2026 GraphicyCafe';
+}
+
+// ─── LOAD SITE SETTINGS ───
+async function loadSiteSettings() {
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/site-settings`, { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.site_name) {
+        document.getElementById('siteBrand').textContent = data.site_name;
+        document.getElementById('footerBrand').textContent = data.site_name;
+        document.title = data.site_name;
+      }
+      if (data.tagline) {
+        document.getElementById('footerTagline').textContent = data.tagline;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load site settings:', err);
+  }
+}
+
+// ─── LOAD HERO SLIDES ───
+async function loadHeroSlides() {
+  const container = document.getElementById('heroSlider');
+  try {
+    const res = await fetch('/api/public/hero-slides');
+    if (!res.ok) throw new Error('Failed to fetch hero slides');
+    const slides = await res.json();
+    
+    if (!slides || slides.length === 0) {
+      container.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:480px;background:var(--color-surface);color:var(--color-ivory-dim);flex-direction:column;gap:12px;">
+          <span style="font-size:48px;">🖼️</span>
+          <p style="font-size:16px;">No hero slides configured</p>
+          <p style="font-size:13px;">Add slides from the admin panel</p>
+        </div>
+      `;
+      return;
+    }
+    renderHeroSlides(slides);
+  } catch (err) {
+    console.error('Failed to load hero slides:', err);
+    container.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;height:480px;background:var(--color-surface);color:var(--color-red);flex-direction:column;gap:12px;">
+        <span style="font-size:48px;">⚠️</span>
+        <p style="font-size:16px;">Failed to load hero slides</p>
+        <p style="font-size:13px;">Please check your connection</p>
+      </div>
+    `;
+  }
+}
+
+function renderHeroSlides(slides) {
+  const container = document.getElementById('heroSlider');
+  container.innerHTML = slides.map((slide, i) => `
+    <div class="hero-slide ${i === 0 ? 'is-active' : ''}" style="background-image:url('${slide.image_url}')">
+      <div class="hero-content">
+        ${slide.eyebrow ? `<span class="eyebrow">${slide.eyebrow}</span>` : ''}
+        <h1 class="hero-title">${slide.title || ''}</h1>
+        ${slide.subtitle ? `<p class="hero-sub">${slide.subtitle}</p>` : ''}
+        ${slide.cta_text ? `<a href="${slide.cta_link || '#'}" class="btn-primary">${slide.cta_text}</a>` : ''}
+      </div>
+    </div>
+  `).join('') + `
+    <div class="hero-dots">
+      ${slides.map((_, i) => `<button class="hero-dot ${i === 0 ? 'is-active' : ''}"></button>`).join('')}
+    </div>
+  `;
+  initHeroSlider();
+}
+
+function initHeroSlider() {
+  const slides = document.querySelectorAll('.hero-slide');
+  const dots = document.querySelectorAll('.hero-dot');
+  if (slides.length === 0) return;
+  let active = 0;
+  if (window.heroInterval) clearInterval(window.heroInterval);
+  window.heroInterval = setInterval(() => {
+    slides[active].classList.remove('is-active');
+    dots[active].classList.remove('is-active');
+    active = (active + 1) % slides.length;
+    slides[active].classList.add('is-active');
+    dots[active].classList.add('is-active');
+  }, 4000);
+  dots.forEach((dot, i) => {
+    dot.addEventListener('click', () => {
+      slides[active].classList.remove('is-active');
+      dots[active].classList.remove('is-active');
+      active = i;
+      slides[active].classList.add('is-active');
+      dots[active].classList.add('is-active');
+    });
+  });
+}
+
+// ─── LOAD CATEGORIES ───
+async function loadCategories() {
+  const container = document.getElementById('categoryTabs');
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/categories`, { credentials: 'include' });
+    if (res.ok) {
+      const categories = await res.json();
+      if (categories.length === 0) {
+        container.innerHTML = '<button class="cat-tab is-active">All</button>';
+        return;
+      }
+      container.innerHTML = categories.map((cat, i) => `
+        <button class="cat-tab ${i === 0 ? 'is-active' : ''}" data-category-id="${cat.id}">${cat.name}</button>
+      `).join('');
+      container.querySelectorAll('.cat-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          container.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('is-active'));
+          tab.classList.add('is-active');
+          loadProducts(tab.dataset.categoryId);
+        });
+      });
+    }
+  } catch (err) {
+    console.error('Failed to load categories:', err);
+    container.innerHTML = '<div class="loading">Failed to load categories</div>';
+  }
+}
+
+// ─── LOAD PRODUCTS ───
+async function loadProducts(categoryId = null) {
+  const container = document.getElementById('productsRow');
+  container.innerHTML = '<div class="loading">Loading products...</div>';
+  try {
+    let url = `${API_BASE}/api/admin/products`;
+    const res = await fetch(url, { credentials: 'include' });
+    if (res.ok) {
+      let products = await res.json();
+      if (categoryId) {
+        products = products.filter(p => p.category_id === categoryId);
+      }
+      if (products.length === 0) {
+        container.innerHTML = '<div style="color:var(--color-ivory-dim);padding:20px;text-align:center;">No products in this category</div>';
+        return;
+      }
+      container.innerHTML = products.map(p => `
+        <div class="product-card">
+          <img src="${getImageUrl(p.images)}" alt="${p.name}">
+          <div class="product-card-body">
+            <span class="product-cat">${p.category_name || 'Uncategorized'}</span>
+            <h3 class="product-name">${p.name}</h3>
+            <div class="product-foot">
+              <span class="product-price">$${Number(p.price).toFixed(2)}</span>
+              <button class="add-btn" onclick="addToCart('${p.id}')">+</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+  } catch (err) {
+    console.error('Failed to load products:', err);
+    container.innerHTML = '<div class="loading">Failed to load products</div>';
+  }
+}
+
+// ─── LOAD 3D MODELS ───
+async function loadModels() {
+  const container = document.getElementById('modelGalleryRow');
+  container.innerHTML = '<div class="loading">Loading 3D models...</div>';
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/models`, { credentials: 'include' });
+    if (res.ok) {
+      const models = await res.json();
+      if (models.length === 0) {
+        container.innerHTML = '<div style="color:var(--color-ivory-dim);padding:20px;text-align:center;">No 3D models available yet.</div>';
+        return;
+      }
+      container.innerHTML = models.map(m => `
+        <div class="menu3d-card">
+          <span class="menu3d-badge">◐ rotate · AR ready</span>
+          <model-viewer src="${m.file_url}" alt="${m.filename}" auto-rotate camera-controls disable-zoom shadow-intensity="1" exposure="1" environment-image="neutral" interaction-prompt="none"></model-viewer>
+          <div class="menu3d-body">
+            <span class="product-cat">${m.model_type || '3D Model'}</span>
+            <h3 class="product-name">${m.filename.replace(/\.[^.]+$/, '')}</h3>
+            <div class="product-foot">
+              <span class="product-price">${m.product_name ? 'Assigned to ' + m.product_name : 'Unassigned'}</span>
+            </div>
+            <p class="menu3d-hint">Drag to rotate · tap AR to place on your table</p>
+          </div>
+        </div>
+      `).join('');
+    }
+  } catch (err) {
+    console.error('Failed to load 3D models:', err);
+    container.innerHTML = '<div class="loading">Failed to load 3D models</div>';
+  }
+}
+
+// ─── LOAD TESTIMONIALS ───
+async function loadTestimonials() {
+  const container = document.getElementById('testimonialsGrid');
+  try {
+    const res = await fetch('/api/public/testimonials');
+    if (!res.ok) throw new Error('Failed to fetch');
+    const testimonials = await res.json();
+    
+    if (!testimonials || testimonials.length === 0) {
+      container.innerHTML = '<div style="color:var(--color-ivory-dim);padding:40px;text-align:center;">No testimonials yet</div>';
+      return;
+    }
+    
+    container.innerHTML = testimonials.map(t => `
+      <div class="testi-card">
+        <div class="testi-stars">${'★'.repeat(t.stars)}${'☆'.repeat(5 - t.stars)}</div>
+        <p class="testi-quote">${t.quote}</p>
+        <div class="testi-person">
+          <div class="testi-avatar">${t.initials || '??'}</div>
+          <div><div class="testi-name">${t.name}</div><div class="testi-role">${t.role || ''}</div></div>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Failed to load testimonials:', err);
+    container.innerHTML = '<div class="loading">Failed to load testimonials</div>';
+  }
+}
+
+// ─── LOAD TRUST STRIP (from page_content) ───
+function loadTrustStrip() {
+  const container = document.getElementById('trustStripContainer');
+  const content = pageContent;
+  
+  const items = [
+    { icon: '◐', label: content.trust_item_1 || '3D preview on every dish' },
+    { icon: '⌘', label: content.trust_item_2 || 'Contactless delivery' },
+    { icon: '✦', label: content.trust_item_3 || 'Fresh, sourced daily' },
+    { icon: '⎔', label: content.trust_item_4 || 'Secure checkout' }
+  ];
+  
+  container.innerHTML = `
+    <div class="trust-strip">
+      ${items.map(item => `
+        <div class="trust-item">
+          <div class="trust-icon">${item.icon}</div>
+          <div class="trust-label">${item.label}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ─── LOAD NEWSLETTER (from page_content) ───
+function loadNewsletter() {
+  const container = document.getElementById('newsletterContainer');
+  const content = pageContent;
+  
+  container.innerHTML = `
+    <section class="section">
+      <div class="newsletter">
+        <div>
+          <span class="eyebrow">${content.newsletter_eyebrow || 'Stay in the loop'}</span>
+          <h3 class="newsletter-title">${content.newsletter_title || 'First to know about new menu drops'}</h3>
+          <p class="newsletter-desc">${content.newsletter_description || 'One email a month, mostly about food. No spam.'}</p>
+        </div>
+        <div class="newsletter-form">
+          <input type="email" placeholder="name@email.com" disabled>
+          <button class="btn-primary">${content.newsletter_button_text || 'Subscribe'}</button>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+// ─── LOAD CONTACT FOR FOOTER ───
+async function loadContactForFooter() {
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/contact`, { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.hours_weekdays) {
+        document.getElementById('footerHoursWeekdays').textContent = data.hours_weekdays;
+      }
+      if (data.hours_weekends) {
+        document.getElementById('footerHoursWeekends').textContent = data.hours_weekends;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load contact details:', err);
+  }
+}
+
+// ─── CART ───
+let cartCount = 0;
+function addToCart(productId) {
+  cartCount++;
+  document.getElementById('cartCount').textContent = cartCount;
+  showToast('Added to cart!');
+}
+
+// ─── HAMBURGER TOGGLE ───
+document.addEventListener('DOMContentLoaded', () => {
+  const hamburger = document.getElementById('hamburgerBtn');
+  const mobileNav = document.getElementById('mobileNav');
+  hamburger.addEventListener('click', () => {
+    mobileNav.classList.toggle('is-open');
+  });
+});
+
+// ─── INIT ───
+document.addEventListener('DOMContentLoaded', async () => {
+  // Load all content first
+  await loadPageContent();
+  await loadSiteSettings();
+  await loadHeroSlides();
+  await loadCategories();
+  await loadProducts();
+  await loadModels();
+  await loadTestimonials();
+  await loadContactForFooter();
+});
+</script>
+</body>
+</html>
