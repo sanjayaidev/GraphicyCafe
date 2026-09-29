@@ -540,7 +540,7 @@
   <nav class="nav-links" id="navLinks">
     <a href="#" id="navLink1">Menu</a>
     <a href="#" id="navLink2">Offers</a>
-    <a href="#" id="navLink3">3D Preview</a>
+    <a href="products.html#3d" id="navLink3">3D Preview</a>
     <a href="#" id="navLink4">About</a>
   </nav>
   <div class="header-actions">
@@ -554,7 +554,7 @@
   <div class="mobile-nav-overlay" id="mobileNav">
     <a href="#" id="mobileNavLink1">Menu</a>
     <a href="#" id="mobileNavLink2">Offers</a>
-    <a href="#" id="mobileNavLink3">3D Preview</a>
+    <a href="products.html#3d" id="mobileNavLink3">3D Preview</a>
     <a href="#" id="mobileNavLink4">About</a>
   </div>
 </header>
@@ -676,7 +676,7 @@
         <a href="#" id="footerExplore1">Full menu</a>
         <a href="#" id="footerExplore2">Offers</a>
         <a href="#" id="footerExplore3">Gift cards</a>
-        <a href="#" id="footerExplore4">3D preview</a>
+        <a href="products.html#3d" id="footerExplore4">3D preview</a>
       </div>
     </div>
     <div>
@@ -955,14 +955,14 @@ async function loadProducts(categoryId = null) {
         return;
       }
       container.innerHTML = products.map(p => `
-        <div class="product-card">
+        <div class="product-card" style="cursor:pointer" onclick="location.href='product-details.html?id=${p.id}'">
           <img src="${getImageUrl(p.images)}" alt="${p.name}">
           <div class="product-card-body">
             <span class="product-cat">${p.category_name || 'Uncategorized'}</span>
             <h3 class="product-name">${p.name}</h3>
             <div class="product-foot">
               <span class="product-price">$${Number(p.price).toFixed(2)}</span>
-              <button class="add-btn" onclick="addToCart('${p.id}')">+</button>
+              <button class="add-btn" onclick="event.stopPropagation();addToCart('${p.id}')">+</button>
             </div>
           </div>
         </div>
@@ -997,6 +997,7 @@ async function loadModels() {
               <span class="product-price">${m.product_name ? 'Assigned to ' + m.product_name : 'Unassigned'}</span>
             </div>
             <p class="menu3d-hint">Drag to rotate · tap AR to place on your table</p>
+            ${m.assigned_product_id ? `<a class="menu3d-hint" style="color:var(--color-amber);" href="product-details.html?id=${m.assigned_product_id}">Full 3D · Simple &amp; Advanced AR →</a>` : ''}
           </div>
         </div>
       `).join('');

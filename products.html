@@ -501,7 +501,7 @@ button, input, select { font-family: inherit; }
     <a href="index.html">Home</a>
     <a href="products.html" class="active">Menu</a>
     <a href="#">Offers</a>
-    <a href="#">3D Preview</a>
+    <a href="products.html#3d">3D Preview</a>
     <a href="#">About</a>
   </nav>
   <div class="header-actions">
@@ -604,7 +604,8 @@ button, input, select { font-family: inherit; }
           environment-image="neutral"
           interaction-prompt="none"
           ar
-          ar-modes="webxr scene-viewer quick-look"
+          ar-modes="scene-viewer quick-look webxr"
+          ar-placement="floor"
         >
         </model-viewer>
       </div>
@@ -620,6 +621,7 @@ button, input, select { font-family: inherit; }
         <div class="quick-view-actions">
           <button class="add-btn" id="qvAddToCart">+ Add to cart</button>
           <button class="view-ar-btn" id="qvViewAr">◐ View in AR</button>
+          <a class="view-ar-btn" id="qvFullView" href="#">Full 3D · Simple &amp; Advanced AR →</a>
         </div>
       </div>
     </div>
@@ -1014,13 +1016,16 @@ function openQuickView(productId) {
     model.src = product.model_url;
     model.style.display = 'block';
     model.setAttribute('ar', '');
-    model.setAttribute('ar-modes', 'webxr scene-viewer quick-look');
+    model.setAttribute('ar-modes', 'scene-viewer quick-look webxr');
   } else {
     model.src = '';
     model.style.display = 'none';
   }
   
   document.getElementById('qvViewAr').style.display = has3d ? 'inline-flex' : 'none';
+  const fullLink = document.getElementById('qvFullView');
+  fullLink.href = 'product-details.html?id=' + encodeURIComponent(product.id);
+  fullLink.style.display = 'inline-flex';
   document.getElementById('qvViewAr').onclick = () => {
     if (has3d) {
       model.activateAR();
@@ -1117,6 +1122,10 @@ document.getElementById('filterToggle').addEventListener('click', () => {
 async function init() {
   await loadCategories();
   await loadProducts();
+  if (location.hash === '#3d') {
+    document.getElementById('filter3d').checked = true;
+    applyFilters();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);
