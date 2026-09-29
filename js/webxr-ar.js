@@ -71,6 +71,9 @@ let estimatedLightColor = new THREE.Color(0xffffff);
 
 let canvas, overlayEl, hintEl, exitBtn, cartBtn;
 let onExitCallback = null;
+let onErrorCallback = null;
+let startupInProgress = false;
+let cleanupComplete = true;
 
 // Touch gesture state with improved separation
 const touch = { 
@@ -161,7 +164,7 @@ function loadModel(url) {
 }
 
 async function placeModel() {
-  if (!reticle.visible || placedModel) return;
+  if (!loadedGltfTemplate || !reticle.visible || placedModel) return;
 
   // Build the pivot hierarchy: anchorGroup follows the tracked anchor pose
   // every frame (or just stays put if anchors aren't supported), and
@@ -385,15 +388,20 @@ function onTouchEnd(e) {
 
 function cleanupListeners() {
   // Listeners live on overlayEl, not canvas — see start() for why.
+  if (!overlayEl) return;
   overlayEl.removeEventListener('touchstart', onTouchStart);
   overlayEl.removeEventListener('touchmove', onTouchMove);
   overlayEl.removeEventListener('touchend', onTouchEnd);
 }
 
 function onSessionEnd() {
+  if (cleanupComplete) return;
+  cleanupComplete = true;
+  startupInProgress = false;
   hitTestSourceRequested = false;
   hitTestSource = null;
   placedModel = null;
+  loadedGltfTemplate = null;
   anchor = null;
   anchorGroup = null;
   lastHitTestResult = null;
@@ -411,8 +419,18 @@ function onSessionEnd() {
   overlayEl.hidden = true;
   cartBtn.hidden = true;
   cleanupListeners();
-  if (renderer) renderer.setAnimationLoop(null);
-  if (typeof onExitCallback === 'function') onExitCallback();
+  if (exitBtn) exitBtn.onclick = null;
+  if (cartBtn) cartBtn.onclick = null;
+  if (renderer) {
+    renderer.setAnimationLoop(null);
+    renderer.dispose();
+    renderer = null;
+  }
+  session = null;
+  const onExit = onExitCallback;
+  onExitCallback = null;
+  onErrorCallback = null;
+  if (typeof onExit === 'function') onExit();
 }
 
 function render(timestamp, frame) {
@@ -439,7 +457,6 @@ function render(timestamp, frame) {
           console.error('[AR] failed to set up hit-test source:', err);
           if (hintEl) hintEl.textContent = 'Hit-test setup failed: ' + err.message;
         });
-      xrSession.addEventListener('end', onSessionEnd);
     }
 
     if (hitTestSource && !placedModel) {
@@ -585,12 +602,16 @@ function render(timestamp, frame) {
   } catch (err) {
     console.error('Advanced AR render error:', err);
     if (hintEl) hintEl.textContent = 'AR error: ' + err.message;
-    if (renderer) renderer.setAnimationLoop(null);
+    if (session) session.end();
   }
 }
 
-async function start({ onExit, onAddToCart, modelUrl }) {
+async function start({ onExit, onAddToCart, onError, modelUrl }) {
+  if (startupInProgress || session) return;
+  startupInProgress = true;
+  cleanupComplete = false;
   onExitCallback = onExit;
+  onErrorCallback = onError;
 
   // Use provided model URL or default to Astronaut
   currentModelUrl = modelUrl || MODEL_URL;
@@ -601,103 +622,92 @@ async function start({ onExit, onAddToCart, modelUrl }) {
   cartBtn = document.getElementById('arAddToCartBtn');
 
   overlayEl.hidden = false;
-  hintEl.textContent = 'Move your phone slowly to find a surface, then tap to place.';
+  hintEl.textContent = 'Starting AR...';
   cartBtn.hidden = true;
 
-  renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-  renderer.xr.enabled = true;
-  // Without this, the renderer clears each frame to opaque black and paints
-  // straight over the camera passthrough — the classic "AR shows a black
-  // screen" bug. Alpha must be 0 so the camera feed shows through.
-  renderer.setClearColor(0x000000, 0);
-  // Matches model-viewer's default rendering setup — without correct tone
-  // mapping and color space, an environment map still looks washed out or
-  // oversaturated even once it's wired up.
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1;
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-
-  // Request light estimation for better immersion (optional feature)
-  // This allows the scene lighting to adapt to real-world conditions
+  let sessionRequest;
   try {
-    if ('requestLightEstimation' in THREE.WebXRManager.prototype) {
-      renderer.xr.setRequestLightEstimation(true);
-      lightEstimationEnabled = true;
-    }
-  } catch (e) {
-    // Light estimation not available on this device/browser
-    console.log('[AR] Light estimation not available, using default lighting');
-  }
+    if (!navigator.xr) throw new Error('WebXR is unavailable in this browser.');
 
-  // setupScene needs a live renderer to generate the PMREM environment map,
-  // so this must happen after the renderer above, not before it.
-  setupScene(renderer);
-
-  camera = new THREE.PerspectiveCamera();
-
-  // Three.js defaults to the 'local-floor' reference space, which is only
-  // guaranteed on VR headsets. Handheld phone AR does not guarantee floor
-  // tracking, so requesting it can throw "NotSupportedError: ... reference
-  // space type is not supported by this device" and leave the session with
-  // no working camera pose — which renders as a black screen even though
-  // the AR session itself started fine. 'local' is the space guaranteed for
-  // immersive-ar sessions, so use that instead.
-  renderer.xr.setReferenceSpaceType('local');
-
-  try {
-    loadedGltfTemplate = await loadModel(currentModelUrl);
-  } catch (err) {
-    console.error('Failed to load AR model:', err);
-    hintEl.textContent = 'Could not load the 3D model. Try again.';
-    return;
-  }
-
-  controller = renderer.xr.getController(0);
-  controller.addEventListener('select', placeModel);
-  scene.add(controller);
-
-  // During an immersive-ar session with dom-overlay, only elements inside
-  // the overlay root receive real DOM touch events — the canvas itself
-  // sits outside that root and never sees touchstart/touchmove/touchend,
-  // even though it's visually on screen. Attach gestures to overlayEl
-  // instead (see the matching pointer-events change in style.css).
-  overlayEl.addEventListener('touchstart', onTouchStart, { passive: true });
-  overlayEl.addEventListener('touchmove', onTouchMove, { passive: false });
-  overlayEl.addEventListener('touchend', onTouchEnd, { passive: true });
-
-  exitBtn.addEventListener(
-    'click',
-    () => {
-      if (session) session.end();
-    },
-    { once: true }
-  );
-
-  cartBtn.addEventListener('click', () => {
-    if (typeof onAddToCart === 'function') onAddToCart();
-    cartBtn.textContent = 'Added ✓';
-    setTimeout(() => {
-      cartBtn.textContent = 'Add to cart';
-    }, 1400);
-  });
-
-  try {
-    session = await navigator.xr.requestSession('immersive-ar', {
+    // requestSession must be invoked from the tap handler, before any awaited work.
+    sessionRequest = navigator.xr.requestSession('immersive-ar', {
       requiredFeatures: ['hit-test'],
       optionalFeatures: ['dom-overlay', 'light-estimation'],
       domOverlay: { root: overlayEl },
     });
-  } catch (err) {
-    console.error('Failed to start AR session:', err);
-    overlayEl.hidden = true;
-    if (typeof onExit === 'function') onExit();
-    return;
-  }
 
-  await renderer.xr.setSession(session);
-  renderer.setAnimationLoop(render);
+    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    renderer.xr.enabled = true;
+    renderer.setClearColor(0x000000, 0);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    try {
+      if ('requestLightEstimation' in THREE.WebXRManager.prototype) {
+        renderer.xr.setRequestLightEstimation(true);
+        lightEstimationEnabled = true;
+      }
+    } catch (err) {
+      console.log('[AR] Light estimation unavailable; using default lighting.');
+    }
+
+    setupScene(renderer);
+    camera = new THREE.PerspectiveCamera();
+    renderer.xr.setReferenceSpaceType('local');
+
+    controller = renderer.xr.getController(0);
+    controller.addEventListener('select', placeModel);
+    scene.add(controller);
+
+    overlayEl.addEventListener('touchstart', onTouchStart, { passive: true });
+    overlayEl.addEventListener('touchmove', onTouchMove, { passive: false });
+    overlayEl.addEventListener('touchend', onTouchEnd, { passive: true });
+
+    exitBtn.onclick = () => {
+      if (session) session.end();
+    };
+
+    cartBtn.onclick = () => {
+      if (typeof onAddToCart === 'function') onAddToCart();
+      cartBtn.textContent = 'Added';
+      setTimeout(() => {
+        if (cartBtn) cartBtn.textContent = 'Add to cart';
+      }, 1400);
+    };
+
+    session = await sessionRequest;
+    session.addEventListener('end', onSessionEnd, { once: true });
+    await renderer.xr.setSession(session);
+    renderer.setAnimationLoop(render);
+
+    hintEl.textContent = 'Loading 3D model...';
+    loadedGltfTemplate = await loadModel(currentModelUrl);
+    if (!session) return;
+    hintEl.textContent = 'Move your phone slowly to find a surface, then tap to place.';
+  } catch (err) {
+    console.error('Failed to start Advanced AR:', err);
+    hintEl.textContent = 'AR could not start: ' + err.message;
+    const reportError = onErrorCallback;
+    if (session) {
+      try {
+        await session.end();
+      } catch (endError) {
+        console.warn('Failed to end the AR session cleanly:', endError);
+      }
+    } else if (sessionRequest) {
+      try {
+        const pendingSession = await sessionRequest;
+        await pendingSession.end();
+      } catch (sessionError) {
+        // The session request itself may have been rejected.
+      }
+    }
+    onSessionEnd();
+    if (typeof reportError === 'function') reportError(err);
+  }
 }
 
 window.AdvancedAR = { isSupported, start };

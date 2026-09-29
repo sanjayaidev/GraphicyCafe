@@ -1256,26 +1256,16 @@ tabs.simpleAr.addEventListener('click', () => {
   }
 });
 
-// Each Advanced AR session gets an id. The reference module adds a fresh
-// "Add to cart" click listener on every start() and never removes it, so
-// stale sessions' callbacks are ignored to avoid adding to the cart twice.
+// Ignore cart callbacks from a session after another session becomes active.
 let arSessionId = 0;
 
-tabs.advancedAr.addEventListener('click', async () => {
+tabs.advancedAr.addEventListener('click', () => {
   setActiveTab('advancedAr');
   notice.hidden = true;
 
   if (!window.AdvancedAR) {
     noticeText.textContent = 'Advanced AR is still loading \u2014 give it a second and tap again.';
     notice.hidden = false;
-    return;
-  }
-
-  const supported = await window.AdvancedAR.isSupported();
-  if (!supported) {
-    noticeText.textContent = 'Advanced AR needs Chrome on an AR-capable Android device. Try Simple AR instead.';
-    notice.hidden = false;
-    setActiveTab('view3d');
     return;
   }
 
@@ -1292,6 +1282,11 @@ tabs.advancedAr.addEventListener('click', async () => {
     },
     onAddToCart: () => {
       if (sessionId === arSessionId && product) addToCart(product.id);
+    },
+    onError: (error) => {
+      noticeText.textContent = `${error.message} Try Simple AR or use a supported Android browser over HTTPS.`;
+      notice.hidden = false;
+      setActiveTab('view3d');
     },
   });
 });
