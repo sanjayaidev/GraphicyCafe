@@ -7,6 +7,14 @@
     {
       "src": "**/*.html",
       "use": "@vercel/static"
+    },
+    {
+      "src": "demo/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "models/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
