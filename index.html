@@ -989,7 +989,7 @@ async function loadModels() {
       container.innerHTML = models.map(m => `
         <div class="menu3d-card">
           <span class="menu3d-badge">◐ rotate · AR ready</span>
-          <model-viewer src="${m.file_url}" alt="${m.filename}" auto-rotate camera-controls disable-zoom shadow-intensity="1" exposure="1" environment-image="neutral" interaction-prompt="none"></model-viewer>
+          <model-viewer src="${m.file_url}" alt="${m.filename}" ar ar-modes="scene-viewer quick-look webxr" ar-placement="floor" auto-rotate camera-controls disable-zoom shadow-intensity="1" exposure="1" environment-image="neutral" interaction-prompt="none"></model-viewer>
           <div class="menu3d-body">
             <span class="product-cat">${m.model_type || '3D Model'}</span>
             <h3 class="product-name">${m.filename.replace(/\.[^.]+$/, '')}</h3>

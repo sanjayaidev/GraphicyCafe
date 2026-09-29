@@ -11,6 +11,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 <!-- model-viewer handles View 3D + Simple AR natively -->
+<script type="importmap">
+{ "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
 <script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
 
 <style>
@@ -211,6 +217,32 @@ button { font-family: inherit; cursor: pointer; }
   width: 100%;
   height: 100%;
 }
+
+/* Advanced AR (WebXR DOM overlay) */
+.ar-overlay {
+  position: absolute; inset: 0; z-index: 20;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 16px; padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  background: transparent; touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.ar-overlay[hidden] { display: none; }
+.ar-overlay-hint {
+  align-self: center; margin: 0; max-width: 90%; text-align: center;
+  background: rgba(23,20,15,.78); color: var(--color-ivory);
+  border: 1px solid var(--color-line-strong); border-radius: 999px;
+  padding: 10px 16px; font-size: 13px; pointer-events: none;
+}
+.ar-overlay-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.ar-btn {
+  background: rgba(23,20,15,.85); color: var(--color-ivory);
+  border: 1px solid var(--color-line-strong); border-radius: 999px;
+  padding: 12px 18px; font-family: var(--font-mono); font-size: 12px;
+  text-transform: uppercase; letter-spacing: .08em; cursor: pointer;
+}
+.ar-btn[hidden] { display: none; }
+.ar-cart-btn { background: var(--color-amber); color: #17140f; border-color: var(--color-amber); font-weight: 600; }
+.ar-exit-btn { border-color: rgba(255,120,100,.6); }
 
 .ar-notice {
   position: absolute;
@@ -708,7 +740,10 @@ button { font-family: inherit; cursor: pointer; }
         ios-src=""
         alt=""
         ar
-        ar-modes="webxr scene-viewer quick-look"
+        ar-modes="scene-viewer quick-look webxr"
+        ar-placement="floor"
+        ar-scale="auto"
+        xr-environment
         camera-controls
         auto-rotate
         auto-rotate-delay="1200"
@@ -728,8 +763,10 @@ button { font-family: inherit; cursor: pointer; }
       <div id="arOverlay" class="ar-overlay" hidden>
         <p class="ar-overlay-hint" id="arHint"></p>
         <div class="ar-overlay-controls">
-          <button type="button" id="arExitBtn" class="ar-exit-btn">Exit AR</button>
-          <button type="button" id="arAddToCartBtn" class="ar-cart-btn" hidden>Add to cart</button>
+          <button type="button" id="arExitBtn" class="ar-btn ar-exit-btn">Exit AR</button>
+          <button type="button" id="arRepositionBtn" class="ar-btn" hidden>Move</button>
+          <button type="button" id="arResetBtn" class="ar-btn" hidden>Reset</button>
+          <button type="button" id="arAddToCartBtn" class="ar-btn ar-cart-btn" hidden>Add to cart</button>
         </div>
       </div>
     </div>
@@ -932,7 +969,7 @@ function renderProduct() {
   const viewer = document.getElementById('viewer');
   if (has3d && p.model_url) {
     viewer.src = p.model_url;
-    viewer.iosSrc = p.model_url.replace(/\.glb$/i, '.usdz');
+    viewer.removeAttribute('ios-src'); // model-viewer builds a USDZ from the GLB for iOS Quick Look
     viewer.alt = p.name;
     viewer.style.display = 'block';
   } else {
@@ -1037,7 +1074,7 @@ function renderSimilarProducts() {
   container.innerHTML = similar.map(p => {
     const has3d = !!p.model_url;
     return `
-      <div class="similar-card" onclick="window.location.href='product-detail.html?id=${p.id}'">
+      <div class="similar-card" onclick="window.location.href='product-details.html?id=${p.id}'">
         ${has3d ? `
           <model-viewer
             src="${p.model_url}"
@@ -1103,7 +1140,7 @@ document.querySelectorAll('.tab-nav button').forEach(btn => {
 // ─── MODEL VIEWER ERROR HANDLING ───
 const viewer = document.getElementById('viewer');
 viewer.addEventListener('error', (event) => {
-  if (viewer.src && viewer.src.includes('assets/models/')) {
+  if (viewer.src && viewer.src !== PLACEHOLDER_GLB) {
     console.warn('Model not found — falling back to placeholder.');
     viewer.src = PLACEHOLDER_GLB;
     viewer.iosSrc = PLACEHOLDER_USDZ;
@@ -1182,7 +1219,7 @@ tabsAr.view3d.addEventListener('click', () => {
   if (notice) notice.hidden = true;
   if (xrCanvas) xrCanvas.hidden = true;
   if (viewerEl) {
-    viewerEl.hidden = false;
+    viewerEl.style.display = '';
     viewerEl.cameraOrbit = '0deg 75deg 105%';
   }
 });
@@ -1205,8 +1242,9 @@ tabsAr.advancedAr.addEventListener('click', async () => {
   if (notice) notice.hidden = true;
 
   if (!window.AdvancedAR) {
+    setActiveTab('view3d');
     if (noticeText) {
-      noticeText.textContent = 'Advanced AR is still loading — give it a second and tap again.';
+      noticeText.textContent = 'Advanced AR is still loading (or couldn\'t load). Check your connection, wait a moment and tap again.';
     }
     if (notice) notice.hidden = false;
     return;
@@ -1214,24 +1252,29 @@ tabsAr.advancedAr.addEventListener('click', async () => {
 
   const supported = await window.AdvancedAR.isSupported();
   if (!supported) {
+    setActiveTab('view3d');
     if (noticeText) {
-      noticeText.textContent = 'Advanced AR needs Chrome on an AR-capable Android device. Try Simple AR instead.';
+      noticeText.textContent = 'Advanced AR needs Chrome on an AR-capable Android phone (over HTTPS). Try Simple AR instead.';
     }
     if (notice) notice.hidden = false;
-    setActiveTab('view3d');
     return;
   }
 
-  if (viewerEl) viewerEl.hidden = true;
+  if (viewerEl) viewerEl.style.display = 'none';
   if (xrCanvas) xrCanvas.hidden = false;
 
   const modelUrl = product && product.model_url ? product.model_url : PLACEHOLDER_GLB;
 
   window.AdvancedAR.start({
     modelUrl: modelUrl,
+    fallbackUrl: PLACEHOLDER_GLB,
+    onError: (msg) => {
+      if (noticeText) noticeText.textContent = msg;
+      if (notice) notice.hidden = false;
+    },
     onExit: () => {
       if (xrCanvas) xrCanvas.hidden = true;
-      if (viewerEl) viewerEl.hidden = false;
+      if (viewerEl) viewerEl.style.display = '';
       setActiveTab('view3d');
     },
     onAddToCart: () => {
