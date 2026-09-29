@@ -11,13 +11,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 <!-- model-viewer handles View 3D + Simple AR natively -->
+<script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+
+<!-- Three.js, for Advanced AR mode -->
 <script type="importmap">
-{ "imports": {
+{
+  "imports": {
     "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
     "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-} }
+  }
+}
 </script>
-<script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+<script type="module" src="js/webxr-ar.js"></script>
 
 <style>
 /* ─── CSS Variables ─── */
@@ -184,14 +189,16 @@ button { font-family: inherit; cursor: pointer; }
   position: relative;
 }
 
+/* ============================================================
+   Viewer
+   ============================================================ */
 .viewer-wrap {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  background: radial-gradient(120% 120% at 50% 15%, var(--color-surface-raised) 0%, var(--color-surface) 55%, var(--color-bg) 100%);
-  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 120% at 50% 15%, var(--color-surface-raised) 0%, var(--color-surface) 55%, var(--color-bg) 100%);
   overflow: hidden;
-  border: 1px solid var(--color-line);
 }
 
 .viewer {
@@ -218,32 +225,6 @@ button { font-family: inherit; cursor: pointer; }
   height: 100%;
 }
 
-/* Advanced AR (WebXR DOM overlay) */
-.ar-overlay {
-  position: absolute; inset: 0; z-index: 20;
-  display: flex; flex-direction: column; justify-content: space-between;
-  padding: 16px; padding-top: max(16px, env(safe-area-inset-top));
-  padding-bottom: max(16px, env(safe-area-inset-bottom));
-  background: transparent; touch-action: none; user-select: none; -webkit-user-select: none;
-}
-.ar-overlay[hidden] { display: none; }
-.ar-overlay-hint {
-  align-self: center; margin: 0; max-width: 90%; text-align: center;
-  background: rgba(23,20,15,.78); color: var(--color-ivory);
-  border: 1px solid var(--color-line-strong); border-radius: 999px;
-  padding: 10px 16px; font-size: 13px; pointer-events: none;
-}
-.ar-overlay-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-.ar-btn {
-  background: rgba(23,20,15,.85); color: var(--color-ivory);
-  border: 1px solid var(--color-line-strong); border-radius: 999px;
-  padding: 12px 18px; font-family: var(--font-mono); font-size: 12px;
-  text-transform: uppercase; letter-spacing: .08em; cursor: pointer;
-}
-.ar-btn[hidden] { display: none; }
-.ar-cart-btn { background: var(--color-amber); color: #17140f; border-color: var(--color-amber); font-weight: 600; }
-.ar-exit-btn { border-color: rgba(255,120,100,.6); }
-
 .ar-notice {
   position: absolute;
   left: 16px;
@@ -258,6 +239,7 @@ button { font-family: inherit; cursor: pointer; }
   gap: 12px;
   z-index: 10;
 }
+
 .ar-notice p {
   margin: 0;
   font-size: 13px;
@@ -265,6 +247,7 @@ button { font-family: inherit; cursor: pointer; }
   color: var(--color-ivory);
   flex: 1;
 }
+
 .notice-close {
   flex-shrink: 0;
   background: transparent;
@@ -277,55 +260,153 @@ button { font-family: inherit; cursor: pointer; }
   padding: 8px 12px;
   border-radius: 999px;
   cursor: pointer;
-  transition: all 0.15s ease;
 }
+
 .notice-close:hover {
   border-color: var(--color-amber);
   color: var(--color-amber);
-  background: rgba(227, 166, 61, 0.1);
 }
 
-/* Mode switch */
+/* ============================================================
+   Mode switch — three ticket-style tabs, numbered because the
+   order genuinely reflects increasing AR complexity
+   ============================================================ */
 .mode-switch {
   display: flex;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  margin-top: 12px;
+  border-bottom: 1px solid var(--color-line);
 }
+
 .mode-tab {
   flex: 1;
   background: transparent;
   border: none;
+  border-right: 1px solid var(--color-line);
   color: var(--color-ivory-dim);
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  padding: 12px 8px;
+  padding: 16px 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: all 0.15s ease;
+  transition: color 0.15s ease, background 0.15s ease;
 }
-.mode-tab:not(:last-child) {
-  border-right: 1px solid var(--color-line);
+
+.mode-tab:last-child {
+  border-right: none;
 }
+
 .mode-index {
   font-family: var(--font-mono);
-  font-size: 10px;
-  opacity: 0.5;
+  font-size: 11px;
+  color: var(--color-ivory-dim);
+  opacity: 0.6;
 }
+
 .mode-tab.is-active {
   color: var(--color-amber);
   background: rgba(227, 166, 61, 0.08);
 }
+
 .mode-tab.is-active .mode-index {
+  color: var(--color-amber);
   opacity: 1;
 }
+
 .mode-tab:hover:not(.is-active) {
   color: var(--color-ivory);
+}
+
+/* ============================================================
+   Advanced AR overlay (rendered on top of the camera feed
+   during an active WebXR session)
+   ============================================================ */
+.ar-overlay {
+  position: fixed;
+  inset: 0;
+  /* Was pointer-events: none. This element (the dom-overlay root) is the
+     only thing that receives real touch events during an immersive-ar
+     session — the canvas underneath does not, even though it's what you
+     see. It needs pointer-events: auto so rotate/pinch/pan gestures reach
+     it; the hint pill below still opts out individually. */
+  pointer-events: auto;
+  z-index: 50;
+}
+
+.ar-overlay-hint {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(23, 20, 15, 0.85);
+  color: var(--color-ivory);
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 10px 18px;
+  border-radius: 999px;
+  max-width: 82vw;
+  text-align: center;
+  pointer-events: none;
+}
+
+.ar-overlay-controls {
+  position: absolute;
+  bottom: 32px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.ar-exit-btn {
+  background: rgba(23, 20, 15, 0.85);
+  color: var(--color-ivory-dim);
+  border: 1px solid var(--color-line-strong);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 14px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.ar-cart-btn {
+  background: var(--color-amber);
+  color: var(--color-bg);
+  border: none;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 14px 26px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+@media (max-width: 380px) {
+  .mode-tab {
+    font-size: 12px;
+    padding: 14px 4px;
+  }
+}
+
+/* ============================================================
+   GraphicyCafe additions (not in the reference viewer)
+   ============================================================ */
+/* Card framing for the two-column product layout */
+.viewer-wrap {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-line);
+}
+/* .ar-notice sets display:flex and .viewer inherits model-viewer's
+   display:block, both of which override the [hidden] attribute. */
+.ar-notice[hidden],
+.viewer[hidden] {
+  display: none;
 }
 
 /* ─── INFO COLUMN ─── */
@@ -732,18 +813,15 @@ button { font-family: inherit; cursor: pointer; }
 
   <!-- Viewer Column -->
   <div class="viewer-column">
-    <div class="viewer-wrap">
+  <div class="viewer-wrap" aria-label="Product viewer">
+
       <model-viewer
         id="viewer"
         class="viewer"
         src=""
-        ios-src=""
         alt=""
         ar
-        ar-modes="scene-viewer quick-look webxr"
-        ar-placement="floor"
-        ar-scale="auto"
-        xr-environment
+        ar-modes="webxr scene-viewer quick-look"
         camera-controls
         auto-rotate
         auto-rotate-delay="1200"
@@ -753,25 +831,29 @@ button { font-family: inherit; cursor: pointer; }
         interaction-prompt="none"
         autoplay
       >
-        <div class="poster-note" slot="poster">Loading dish&hellip;</div>
+        <div class="poster-note" slot="poster">Loading model&hellip;</div>
       </model-viewer>
+
+      <!-- Advanced AR takes over this canvas when active; hidden otherwise -->
       <canvas id="xr-canvas" class="xr-canvas" hidden></canvas>
+
       <div id="advancedArNotice" class="ar-notice" hidden>
         <p id="advancedArNoticeText"></p>
         <button type="button" id="advancedArNoticeClose" class="notice-close">Dismiss</button>
       </div>
+
+      <!-- Rendered on top of the camera feed only during an active Advanced AR session -->
       <div id="arOverlay" class="ar-overlay" hidden>
         <p class="ar-overlay-hint" id="arHint"></p>
         <div class="ar-overlay-controls">
-          <button type="button" id="arExitBtn" class="ar-btn ar-exit-btn">Exit AR</button>
-          <button type="button" id="arRepositionBtn" class="ar-btn" hidden>Move</button>
-          <button type="button" id="arResetBtn" class="ar-btn" hidden>Reset</button>
-          <button type="button" id="arAddToCartBtn" class="ar-btn ar-cart-btn" hidden>Add to cart</button>
+          <button type="button" id="arExitBtn" class="ar-exit-btn">Exit AR</button>
+          <button type="button" id="arAddToCartBtn" class="ar-cart-btn" hidden>Add to cart</button>
         </div>
       </div>
+
     </div>
 
-    <!-- Mode Switch -->
+  <!-- Mode switch -->
     <div class="mode-switch" role="tablist" aria-label="Viewing mode">
       <button type="button" class="mode-tab is-active" id="modeView3D" role="tab" aria-selected="true">
         <span class="mode-index">01</span> View 3D
@@ -835,17 +917,6 @@ button { font-family: inherit; cursor: pointer; }
 </div>
 
 <!-- ═══ SCRIPTS ═══ -->
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-  }
-}
-</script>
-
-<script type="module" src="js/webxr-ar.js"></script>
-
 <script>
 // ─── CONFIG ───
 const API_BASE = '';
@@ -966,12 +1037,10 @@ function renderProduct() {
     dietaryContainer.innerHTML = '';
   }
   
-  const viewer = document.getElementById('viewer');
-  if (has3d && p.model_url) {
+  // Model source comes from the product API; everything else is reference viewer logic.
+  if (has3d) {
     viewer.src = p.model_url;
-    viewer.removeAttribute('ios-src'); // model-viewer builds a USDZ from the GLB for iOS Quick Look
-    viewer.alt = p.name;
-    viewer.style.display = 'block';
+    viewer.alt = `3D model of ${p.name}`;
   } else {
     viewer.src = PLACEHOLDER_GLB;
     viewer.iosSrc = PLACEHOLDER_USDZ;
@@ -1137,152 +1206,98 @@ document.querySelectorAll('.tab-nav button').forEach(btn => {
   });
 });
 
-// ─── MODEL VIEWER ERROR HANDLING ───
+// ─── VIEWER + AR MODES (from 3DARViewer product page) ───
 const viewer = document.getElementById('viewer');
+const xrCanvas = document.getElementById('xr-canvas');
+
+// Fallback if the product's model fails to load
 viewer.addEventListener('error', (event) => {
   if (viewer.src && viewer.src !== PLACEHOLDER_GLB) {
-    console.warn('Model not found — falling back to placeholder.');
+    console.warn('Model failed to load \u2014 falling back to placeholder model.');
     viewer.src = PLACEHOLDER_GLB;
     viewer.iosSrc = PLACEHOLDER_USDZ;
   }
 });
 
-// ─── AR MODES WITH FIXED DISMISS BUTTON ───
-const viewerEl = document.getElementById('viewer');
-const xrCanvas = document.getElementById('xr-canvas');
 const notice = document.getElementById('advancedArNotice');
 const noticeText = document.getElementById('advancedArNoticeText');
 const noticeClose = document.getElementById('advancedArNoticeClose');
 
-// ─── FIX: Properly bind the dismiss button ───
-(function setupNoticeDismiss() {
-  if (noticeClose && notice) {
-    // Remove any existing listeners by cloning and replacing
-    const newNoticeClose = noticeClose.cloneNode(true);
-    noticeClose.parentNode.replaceChild(newNoticeClose, noticeClose);
-    
-    // Add click listener with multiple safety measures
-    newNoticeClose.addEventListener('click', function dismissHandler(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      notice.hidden = true;
-      console.log('[AR] Notice dismissed');
-    });
-    
-    // Also handle touch events for mobile
-    newNoticeClose.addEventListener('touchend', function dismissHandler(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      notice.hidden = true;
-      console.log('[AR] Notice dismissed via touch');
-    });
-  }
-})();
-
-// Also dismiss on Escape key
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape' && notice && !notice.hidden) {
-    notice.hidden = true;
-    console.log('[AR] Notice dismissed via Escape');
-  }
-});
-
-// Dismiss when clicking on the notice background (optional)
-if (notice) {
-  notice.addEventListener('click', function(e) {
-    // Only dismiss if clicking on the notice background, not on the button or text
-    if (e.target === notice) {
-      notice.hidden = true;
-    }
-  });
-}
-
-const tabsAr = {
+const tabs = {
   view3d: document.getElementById('modeView3D'),
   simpleAr: document.getElementById('modeSimpleAR'),
   advancedAr: document.getElementById('modeAdvancedAR'),
 };
 
 function setActiveTab(activeKey) {
-  Object.entries(tabsAr).forEach(([key, el]) => {
+  Object.entries(tabs).forEach(([key, el]) => {
     const isActive = key === activeKey;
     el.classList.toggle('is-active', isActive);
     el.setAttribute('aria-selected', String(isActive));
   });
-  if (notice) {
-    notice.hidden = true;
-  }
 }
 
-tabsAr.view3d.addEventListener('click', () => {
+tabs.view3d.addEventListener('click', () => {
   setActiveTab('view3d');
-  if (notice) notice.hidden = true;
-  if (xrCanvas) xrCanvas.hidden = true;
-  if (viewerEl) {
-    viewerEl.style.display = '';
-    viewerEl.cameraOrbit = '0deg 75deg 105%';
-  }
+  notice.hidden = true;
+  xrCanvas.hidden = true;
+  viewer.hidden = false;
+  viewer.cameraOrbit = '0deg 75deg 105%';
 });
 
-tabsAr.simpleAr.addEventListener('click', () => {
+tabs.simpleAr.addEventListener('click', () => {
   setActiveTab('simpleAr');
-  if (notice) notice.hidden = true;
-  if (viewerEl && viewerEl.canActivateAR) {
-    viewerEl.activateAR();
+  notice.hidden = true;
+  if (viewer.canActivateAR) {
+    viewer.activateAR();
   } else {
-    if (noticeText) {
-      noticeText.textContent = 'Simple AR isn\'t available on this browser/device. Try opening this page on a phone with Chrome (Android) or Safari (iPhone).';
-    }
-    if (notice) notice.hidden = false;
+    noticeText.textContent = 'Simple AR isn\u2019t available on this browser/device. Try opening this page on a phone with Chrome (Android) or Safari (iPhone).';
+    notice.hidden = false;
   }
 });
 
-tabsAr.advancedAr.addEventListener('click', async () => {
+// Each Advanced AR session gets an id. The reference module adds a fresh
+// "Add to cart" click listener on every start() and never removes it, so
+// stale sessions' callbacks are ignored to avoid adding to the cart twice.
+let arSessionId = 0;
+
+tabs.advancedAr.addEventListener('click', async () => {
   setActiveTab('advancedAr');
-  if (notice) notice.hidden = true;
+  notice.hidden = true;
 
   if (!window.AdvancedAR) {
-    setActiveTab('view3d');
-    if (noticeText) {
-      noticeText.textContent = 'Advanced AR is still loading (or couldn\'t load). Check your connection, wait a moment and tap again.';
-    }
-    if (notice) notice.hidden = false;
+    noticeText.textContent = 'Advanced AR is still loading \u2014 give it a second and tap again.';
+    notice.hidden = false;
     return;
   }
 
   const supported = await window.AdvancedAR.isSupported();
   if (!supported) {
+    noticeText.textContent = 'Advanced AR needs Chrome on an AR-capable Android device. Try Simple AR instead.';
+    notice.hidden = false;
     setActiveTab('view3d');
-    if (noticeText) {
-      noticeText.textContent = 'Advanced AR needs Chrome on an AR-capable Android phone (over HTTPS). Try Simple AR instead.';
-    }
-    if (notice) notice.hidden = false;
     return;
   }
 
-  if (viewerEl) viewerEl.style.display = 'none';
-  if (xrCanvas) xrCanvas.hidden = false;
+  viewer.hidden = true;
+  xrCanvas.hidden = false;
 
-  const modelUrl = product && product.model_url ? product.model_url : PLACEHOLDER_GLB;
-
+  const sessionId = ++arSessionId;
   window.AdvancedAR.start({
-    modelUrl: modelUrl,
-    fallbackUrl: PLACEHOLDER_GLB,
-    onError: (msg) => {
-      if (noticeText) noticeText.textContent = msg;
-      if (notice) notice.hidden = false;
-    },
+    modelUrl: product && product.model_url ? product.model_url : PLACEHOLDER_GLB,
     onExit: () => {
-      if (xrCanvas) xrCanvas.hidden = true;
-      if (viewerEl) viewerEl.style.display = '';
+      xrCanvas.hidden = true;
+      viewer.hidden = false;
       setActiveTab('view3d');
     },
     onAddToCart: () => {
-      if (product) {
-        addToCart(product.id);
-      }
+      if (sessionId === arSessionId && product) addToCart(product.id);
     },
   });
+});
+
+noticeClose.addEventListener('click', () => {
+  notice.hidden = true;
 });
 
 // ─── INIT ───

@@ -1,368 +1,703 @@
-/* ─────────────────────────────────────────────────────────────
-   GraphicyCafe – ADVANCED AR (in-page WebXR)
+// Advanced AR — Three.js + WebXR
+// Handheld AR only works on Chrome/Android right now (iOS Safari has no
+// WebXR support at all — that's a browser limitation, not something this
+// module can work around). Capability is checked before this ever runs.
 
-   Contract used by product-details.html:
-     await window.AdvancedAR.isSupported()      -> boolean
-     window.AdvancedAR.start({ modelUrl, fallbackUrl, onExit,
-                               onAddToCart, onError, targetSize })
-     window.AdvancedAR.stop()
-
-   What it does (Chrome on an ARCore Android phone, over HTTPS):
-     • detects flat surfaces and shows a placement ring
-     • live "ghost" preview of the dish on the surface, tap to place
-     • drag = rotate, pinch = resize, two-finger twist = rotate
-     • real-world size (default ≈ dinner-plate, 28 cm) – pinch to change
-     • real lighting from the camera (light estimation) + soft shadow
-     • Move / Reset / Add to cart buttons in a DOM overlay
-
-   "Simple AR" is separate: it is <model-viewer>'s native AR button
-   (Scene Viewer on Android, Quick Look on iPhone).
-   ───────────────────────────────────────────────────────────── */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { XREstimatedLight } from 'three/addons/webxr/XREstimatedLight.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-const DEFAULT_SIZE_M = 0.28;      // longest side of the dish, in metres
-const MIN_SCALE = 0.3;
-const MAX_SCALE = 3;
-const DRACO_PATH = 'https://www.gstatic.com/draco/versioned/decoders/1.5.6/';
+const MODEL_URL = 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
+const MIN_SCALE = 0.15;
+const MAX_SCALE = 1.5;
+const BASE_SCALE = 0.35;
 
-/** Scale a loaded glTF so its longest side = targetSize metres, centred on X/Z, sitting on y = 0. */
-export function normalizeModel(root, targetSize = DEFAULT_SIZE_M) {
-  root.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(root);
-  const wrapper = new THREE.Group();
-  if (box.isEmpty()) { wrapper.add(root); return { wrapper, height: 0 }; }
-  const size = box.getSize(new THREE.Vector3());
-  const center = box.getCenter(new THREE.Vector3());
-  const maxDim = Math.max(size.x, size.y, size.z) || 1;
-  const s = targetSize / maxDim;
-  root.position.x -= center.x;
-  root.position.y -= box.min.y;
-  root.position.z -= center.z;
-  wrapper.add(root);
-  wrapper.scale.setScalar(s);
-  return { wrapper, height: size.y * s };
+let renderer, scene, camera, reticle, controller;
+let hitTestSource = null;
+let hitTestSourceRequested = false;
+let framesSinceReady = 0;
+let framesWithHit = 0;
+let placedModel = null;
+let loadedGltfTemplate = null;
+let session = null;
+let currentModelUrl = null;
+let mixer = null;
+let clock = new THREE.Clock();
+
+// Stable world-locking: an XRAnchor (when the device supports it) tracks a
+// physical point and gets corrected by the device's own tracking system as
+// it refines its understanding of the room — a plain fixed position does
+// not get these corrections and can visibly drift/swim as you walk around.
+// anchorGroup is what actually follows the anchor's pose each frame;
+// placedModel is parented to it so user rotate/pan gestures (applied as
+// placedModel's LOCAL transform) survive anchor corrections untouched.
+let anchor = null;
+let anchorGroup = null;
+let lastHitTestResult = null; // the current frame's raw hit-test result, needed to create an anchor at tap time
+
+// Enhanced tracking stabilization with adaptive smoothing
+const reticleSmoothed = { 
+  position: new THREE.Vector3(), 
+  quaternion: new THREE.Quaternion(), 
+  velocity: new THREE.Vector3(),
+  initialized: false 
+};
+const RETICLE_SMOOTHING_BASE = 0.25; // Lower = smoother but more lag
+const RETICLE_SMOOTHING_MAX = 0.6;   // Higher = snappier but more jitter
+const POSITION_THRESHOLD = 0.001;    // Ignore micro-movements below this
+const OUTLIER_REJECTION_DIST = 0.05; // Reject jumps larger than this
+
+// Improved plane detection: track consecutive hits to confirm stable surface
+let consecutiveHits = 0;
+const MIN_CONSECUTIVE_HITS = 1; // Require only 1 frame with hit for instant surface detection
+let lastHitPosition = null;
+
+// Baseplate for visual grounding and one-finger drag control
+let baseplate = null;
+const BASEPLATE_RADIUS = 0.15;
+const BASEPLATE_COLOR = 0xe3a63d;
+const BASEPLATE_OPACITY = 0.3;
+
+// Drag inertia for natural motion
+const DRAG_INERTIA = 0.92; // 0 = no inertia, 0.98 = very slippery
+let dragVelocity = new THREE.Vector3();
+let rotationVelocity = 0;
+const ROTATION_INERTIA = 0.90;
+
+// Lighting estimation state
+let lightEstimationEnabled = false;
+let estimatedLightIntensity = 1.0;
+let estimatedLightColor = new THREE.Color(0xffffff);
+
+let canvas, overlayEl, hintEl, exitBtn, cartBtn;
+let onExitCallback = null;
+
+// Touch gesture state with improved separation
+const touch = { 
+  mode: null, 
+  lastX: 0, 
+  lastY: 0, 
+  lastDist: 0,
+  startTime: 0,
+  startX: 0,
+  startY: 0,
+  tapThreshold: 10, // pixels - if movement < this, it's a tap
+  longPressTimer: null,
+  isLongPress: false
+};
+
+async function isSupported() {
+  if (!('xr' in navigator)) return false;
+  try {
+    return await navigator.xr.isSessionSupported('immersive-ar');
+  } catch {
+    return false;
+  }
 }
 
-function disposeObject(obj) {
-  obj.traverse(o => {
-    if (o.geometry) o.geometry.dispose();
-    const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
-    mats.forEach(m => {
-      Object.values(m).forEach(v => { if (v && v.isTexture) v.dispose(); });
-      m.dispose();
-    });
+function setupScene(rendererInstance) {
+  scene = new THREE.Scene();
+
+  // Plain THREE lights alone leave PBR materials (metalness/roughness)
+  // looking flat and dull — this is the actual reason Simple AR (which
+  // uses model-viewer's built-in neutral HDR environment map) looks so
+  // much better than Advanced AR did. Generating a PMREM environment map
+  // and assigning it to scene.environment gives the model real image-based
+  // lighting and reflections, the same trick model-viewer uses under the
+  // hood, without adding a visible background (scene.background stays
+  // null so the camera passthrough still shows through).
+  const pmremGenerator = new THREE.PMREMGenerator(rendererInstance);
+  scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+  pmremGenerator.dispose();
+
+  // Kept as a gentle fill/key light on top of the environment map — mostly
+  // helps the reticle and adds a bit of directionality, but the environment
+  // map above is now doing the heavy lifting for the model itself.
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(1, 2, 1);
+  scene.add(dirLight);
+
+  // Enhanced reticle with better visibility and baseplate
+  const reticleGeo = new THREE.RingGeometry(0.06, 0.08, 32).rotateX(-Math.PI / 2);
+  const reticleMat = new THREE.MeshBasicMaterial({ 
+    color: 0xe3a63d,
+    transparent: true,
+    opacity: 0.9,
+    side: THREE.DoubleSide
+  });
+  reticle = new THREE.Mesh(reticleGeo, reticleMat);
+  reticle.visible = false;
+  scene.add(reticle);
+
+  // Baseplate: visual grounding disc that appears when model is placed
+  // Provides clear reference for drag interaction and helps user understand
+  // where the model sits relative to the surface
+  const baseplateGeo = new THREE.CircleGeometry(BASEPLATE_RADIUS, 32).rotateX(-Math.PI / 2);
+  const baseplateMat = new THREE.MeshBasicMaterial({
+    color: BASEPLATE_COLOR,
+    transparent: true,
+    opacity: BASEPLATE_OPACITY,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    blending: THREE.NormalBlending
+  });
+  baseplate = new THREE.Mesh(baseplateGeo, baseplateMat);
+  baseplate.visible = false;
+  scene.add(baseplate);
+}
+
+function loadModel(url) {
+  return new Promise((resolve, reject) => {
+    new GLTFLoader().load(url, (gltf) => {
+      const model = gltf.scene;
+      // Extract and store animations if present
+      if (gltf.animations && gltf.animations.length > 0) {
+        model.userData.animations = gltf.animations;
+      }
+      resolve(model);
+    }, undefined, reject);
   });
 }
 
-const AdvancedAR = (() => {
-  let renderer, scene, camera, hemi, dirLight, xrLight, reticle, anchor, els;
-  let session = null, hitTestSource = null, viewerSpace = null;
-  let modelWrapper = null, modelReady = false, ended = true;
-  let placing = true, hasHit = false;
-  let opts = {};
-  let hintTimer = null;
-  let endedByUser = false;
+async function placeModel() {
+  if (!reticle.visible || placedModel) return;
 
-  const tmpPos = new THREE.Vector3();
-  const tmpQuat = new THREE.Quaternion();
-  const tmpScale = new THREE.Vector3();
-  const pointers = new Map();
-  let pinch = null;
+  // Build the pivot hierarchy: anchorGroup follows the tracked anchor pose
+  // every frame (or just stays put if anchors aren't supported), and
+  // placedModel's position/rotation are always LOCAL to it — so user
+  // gestures and anchor corrections never fight each other.
+  anchorGroup = new THREE.Group();
+  anchorGroup.position.copy(reticleSmoothed.position);
+  anchorGroup.quaternion.copy(reticleSmoothed.quaternion);
+  scene.add(anchorGroup);
 
-  const $ = id => document.getElementById(id);
+  placedModel = loadedGltfTemplate.clone(true);
+  placedModel.scale.setScalar(BASE_SCALE);
+  anchorGroup.add(placedModel);
 
-  function grabElements() {
-    els = {
-      canvas: $('xr-canvas'), overlay: $('arOverlay'), hint: $('arHint'),
-      exit: $('arExitBtn'), cart: $('arAddToCartBtn'),
-      move: $('arRepositionBtn'), reset: $('arResetBtn'),
-    };
-    if (!els.canvas || !els.overlay) throw new Error('AR markup (#xr-canvas / #arOverlay) not found');
+  // Setup animation mixer if model has animations
+  // Note: clone() doesn't copy userData.animations, so we check the original template
+  if (loadedGltfTemplate.userData.animations && loadedGltfTemplate.userData.animations.length > 0) {
+    mixer = new THREE.AnimationMixer(placedModel);
+    const action = mixer.clipAction(loadedGltfTemplate.userData.animations[0]);
+    action.play();
   }
 
-  function setHint(text, ms = 0) {
-    if (!els.hint) return;
-    clearTimeout(hintTimer);
-    els.hint.textContent = text;
-    if (ms) hintTimer = setTimeout(() => setHint(currentHint()), ms);
+  // Position baseplate under the model for visual grounding
+  baseplate.position.copy(reticleSmoothed.position);
+  baseplate.position.y -= 0.01; // Slightly below the model's feet
+  baseplate.quaternion.copy(reticleSmoothed.quaternion);
+  baseplate.visible = true;
+  anchorGroup.add(baseplate);
+
+  reticle.visible = false;
+  hintEl.textContent = 'Drag up/down to move · drag left/right to rotate · pinch to resize';
+  cartBtn.hidden = false;
+
+  // Reset plane detection state after successful placement
+  consecutiveHits = 0;
+  lastHitPosition = null;
+
+  // Try to anchor to this physical point so the object stays visually
+  // locked as you walk around it, rather than just sitting at a fixed
+  // coordinate that can drift as tracking refines itself. Not all
+  // devices/browsers support this yet, so failure here is expected on some
+  // hardware — we just fall back to the static (unanchored) placement above.
+  if (lastHitTestResult && typeof lastHitTestResult.createAnchor === 'function') {
+    try {
+      anchor = await lastHitTestResult.createAnchor();
+      console.log('[AR] anchor created — model is now world-locked with drift correction');
+    } catch (err) {
+      console.warn('[AR] anchors not supported on this device, using static placement:', err.message);
+      anchor = null;
+    }
+  } else {
+    console.warn('[AR] anchors API unavailable, using static placement');
   }
-  function currentHint() {
-    if (!modelReady) return 'Loading your dish…';
-    if (placing) return hasHit ? 'Tap to place your dish' : 'Move your phone slowly to find a flat surface';
-    return 'Drag to rotate · pinch to resize';
+}
+
+function onTouchStart(e) {
+  if (!placedModel) return;
+  
+  // Clear any existing timers
+  if (touch.longPressTimer) {
+    clearTimeout(touch.longPressTimer);
+    touch.longPressTimer = null;
   }
-
-  function init() {
-    if (renderer) return;
-    grabElements();
-
-    renderer = new THREE.WebGLRenderer({ canvas: els.canvas, alpha: true, antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.xr.enabled = true;
-    renderer.xr.setReferenceSpaceType('local');
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(70, 1, 0.01, 20);
-
-    // fallback lighting (replaced by real estimated light when the device supports it)
-    hemi = new THREE.HemisphereLight(0xffffff, 0x8b8f99, 1.6);
-    scene.add(hemi);
-
-    xrLight = new XREstimatedLight(renderer);
-    xrLight.addEventListener('estimationstart', () => {
-      scene.add(xrLight); scene.remove(hemi);
-      if (xrLight.environment) scene.environment = xrLight.environment;
-    });
-    xrLight.addEventListener('estimationend', () => {
-      scene.remove(xrLight); scene.add(hemi); scene.environment = null;
-    });
-
-    // everything the user places/rotates/scales lives in `anchor`
-    anchor = new THREE.Group();
-    anchor.visible = false;
-    scene.add(anchor);
-
-    dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
-    dirLight.position.set(0.6, 1.6, 0.4);
-    dirLight.castShadow = true;
-    dirLight.shadow.mapSize.set(1024, 1024);
-    Object.assign(dirLight.shadow.camera, { left: -0.6, right: 0.6, top: 0.6, bottom: -0.6, near: 0.1, far: 4 });
-    dirLight.shadow.bias = -0.0005;
-    anchor.add(dirLight, dirLight.target);
-
-    const shadowCatcher = new THREE.Mesh(
-      new THREE.PlaneGeometry(2, 2).rotateX(-Math.PI / 2),
-      new THREE.ShadowMaterial({ opacity: 0.35 })
-    );
-    shadowCatcher.receiveShadow = true;
-    anchor.add(shadowCatcher);
-
-    reticle = new THREE.Mesh(
-      new THREE.RingGeometry(0.09, 0.11, 40).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial({ color: 0xe3a63d, transparent: true, opacity: 0.9 })
-    );
-    reticle.matrixAutoUpdate = false;
-    reticle.visible = false;
-    scene.add(reticle);
-
-    wireUi();
-  }
-
-  // ── UI + gestures ───────────────────────────────────────────
-  function wireUi() {
-    const { overlay, exit, cart, move, reset } = els;
-
-    // taps on the overlay must not also be treated as an XR "select"
-    overlay.addEventListener('beforexrselect', e => e.preventDefault());
-
-    exit.addEventListener('click', () => stop());
-    cart?.addEventListener('click', () => {
-      if (opts.onAddToCart) { opts.onAddToCart(); setHint('Added to cart ✓', 1800); }
-    });
-    move?.addEventListener('click', () => {
-      placing = true; hasHit = false;
-      move.hidden = true; reset.hidden = true;
-      setHint(currentHint());
-    });
-    reset?.addEventListener('click', () => {
-      anchor.scale.setScalar(1);
-      anchor.rotation.y = 0;
-      setHint('Size and rotation reset', 1500);
-    });
-
-    overlay.addEventListener('pointerdown', onPointerDown);
-    overlay.addEventListener('pointermove', onPointerMove);
-    overlay.addEventListener('pointerup', onPointerUp);
-    overlay.addEventListener('pointercancel', onPointerUp);
-  }
-
-  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-  const angle = (a, b) => Math.atan2(b.y - a.y, b.x - a.x);
-
-  function onPointerDown(e) {
-    if (e.target.closest('button')) return;
-    els.overlay.setPointerCapture?.(e.pointerId);
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now(), moved: false });
-    if (pointers.size === 2) {
-      const [a, b] = [...pointers.values()];
-      pinch = { d0: dist(a, b) || 1, a0: angle(a, b), s0: anchor.scale.x, r0: anchor.rotation.y };
+  touch.isLongPress = false;
+  
+  if (e.touches.length === 1) {
+    touch.mode = 'drag';
+    touch.lastX = e.touches[0].clientX;
+    touch.lastY = e.touches[0].clientY;
+    touch.startX = touch.lastX;
+    touch.startY = touch.lastY;
+    touch.startTime = Date.now();
+    
+    // Reset velocities for clean start
+    dragVelocity.set(0, 0, 0);
+    rotationVelocity = 0;
+    
+    // Set up long-press timer for alternate action (future: could reset position)
+    touch.longPressTimer = setTimeout(() => {
+      touch.isLongPress = true;
+    }, 500);
+  } else if (e.touches.length === 2) {
+    const [a, b] = e.touches;
+    touch.lastDist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    touch.lastX = (a.clientX + b.clientX) / 2;
+    touch.lastY = (a.clientY + b.clientY) / 2;
+    touch.mode = 'pinchpan';
+    
+    // Cancel long press on two-finger gesture
+    if (touch.longPressTimer) {
+      clearTimeout(touch.longPressTimer);
+      touch.longPressTimer = null;
     }
   }
+}
 
-  function onPointerMove(e) {
-    const p = pointers.get(e.pointerId);
-    if (!p) return;
-    const dx = e.clientX - p.x;
-    p.x = e.clientX; p.y = e.clientY;
-    if (Math.hypot(p.x - p.sx, p.y - p.sy) > 12) p.moved = true;
-    if (placing || !modelReady) return;
+function onTouchMove(e) {
+  if (!placedModel || !touch.mode) return;
+  e.preventDefault();
 
-    if (pointers.size === 1) {
-      anchor.rotation.y += dx * 0.01;                              // drag = rotate
-    } else if (pointers.size === 2 && pinch) {
-      const [a, b] = [...pointers.values()];
-      const s = THREE.MathUtils.clamp(pinch.s0 * (dist(a, b) / pinch.d0), MIN_SCALE, MAX_SCALE);
-      anchor.scale.setScalar(s);                                   // pinch = resize
-      anchor.rotation.y = pinch.r0 - (angle(a, b) - pinch.a0);     // twist = rotate
+  // Single finger drag: vertical drags move the model, horizontal drags rotate in place
+  if (touch.mode === 'drag' && e.touches.length === 1) {
+    const x = e.touches[0].clientX;
+    const y = e.touches[0].clientY;
+    const deltaX = x - touch.lastX;
+    const deltaY = y - touch.lastY;
+    
+    // Calculate velocity for inertia
+    const currentTime = Date.now();
+    const deltaTime = Math.max(currentTime - touch.startTime, 1);
+    dragVelocity.x = deltaX / deltaTime * 16; // Normalize to ~60fps
+    dragVelocity.y = deltaY / deltaTime * 16;
+    
+    // Determine gesture intent: mostly horizontal = rotate, mostly vertical = pan
+    const isHorizontalDrag = Math.abs(deltaX) > Math.abs(deltaY) * 1.5;
+    
+    if (isHorizontalDrag) {
+      // Horizontal drag: rotate in place (no position change)
+      if (Math.abs(deltaX) > 2) {
+        rotationVelocity = deltaX * 0.008;
+        placedModel.rotation.y += rotationVelocity;
+      }
+      // Reset drag velocity so inertia doesn't cause unwanted panning after rotation
+      dragVelocity.set(0, 0, 0);
+    } else {
+      // Vertical drag: pan/move the model on the horizontal plane
+      // Get camera direction for proper world-space movement
+      const forward = new THREE.Vector3();
+      controller.getWorldDirection(forward);
+      forward.y = 0;
+      forward.normalize();
+      const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+      
+      // Convert screen delta to world movement (flattened to floor plane)
+      // Vertical drag moves forward/back, horizontal drag moves left/right
+      const panX = deltaX * 0.004;
+      const panY = deltaY * 0.004;
+      
+      const worldOffset = new THREE.Vector3()
+        .addScaledVector(right, panX)
+        .addScaledVector(forward, -panY);
+      
+      // Apply offset in anchorGroup's local space
+      if (anchorGroup) {
+        const invQuat = anchorGroup.getWorldQuaternion(new THREE.Quaternion()).invert();
+        worldOffset.applyQuaternion(invQuat);
+      }
+      placedModel.position.add(worldOffset);
+      // Reset rotation velocity so inertia doesn't cause unwanted spinning after panning
+      rotationVelocity = 0;
+    }
+    
+    touch.lastX = x;
+    touch.lastY = y;
+    touch.startTime = currentTime;
+    return;
+  }
+
+  // Two-finger pinch to scale and pan
+  if (touch.mode === 'pinchpan' && e.touches.length === 2) {
+    const [a, b] = e.touches;
+    const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    const scaleDelta = dist / touch.lastDist;
+    
+    // Smooth scaling with limits
+    const newScale = THREE.MathUtils.clamp(
+      placedModel.scale.x * scaleDelta,
+      MIN_SCALE,
+      MAX_SCALE
+    );
+    placedModel.scale.setScalar(newScale);
+    touch.lastDist = dist;
+
+    // Two-finger pan (center point movement)
+    const midX = (a.clientX + b.clientX) / 2;
+    const midY = (a.clientY + b.clientY) / 2;
+    const panX = (midX - touch.lastX) * 0.003;
+    const panY = (midY - touch.lastY) * 0.003;
+
+    // Move relative to where the phone is facing, flattened to the floor plane
+    const forward = new THREE.Vector3();
+    controller.getWorldDirection(forward);
+    forward.y = 0;
+    forward.normalize();
+    const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+    const worldOffset = new THREE.Vector3()
+      .addScaledVector(right, panX)
+      .addScaledVector(forward, -panY);
+
+    // placedModel's position is local to anchorGroup, not world space, so
+    // the pan delta needs to be rotated into anchorGroup's local frame
+    // before being applied — otherwise panning drifts sideways whenever
+    // the anchor's tracked orientation isn't perfectly level.
+    if (anchorGroup) {
+      const invQuat = anchorGroup.getWorldQuaternion(new THREE.Quaternion()).invert();
+      worldOffset.applyQuaternion(invQuat);
+    }
+    placedModel.position.add(worldOffset);
+
+    touch.lastX = midX;
+    touch.lastY = midY;
+  }
+}
+
+function onTouchEnd(e) {
+  // Apply inertia when finger lifts off during drag
+  if (touch.mode === 'drag' && placedModel) {
+    // Inertia is applied in the render loop, just flag that we're in inertia phase
+    // The render loop will gradually apply the stored dragVelocity and rotationVelocity
+  }
+  
+  if (e.touches.length === 0) {
+    touch.mode = null;
+    if (touch.longPressTimer) {
+      clearTimeout(touch.longPressTimer);
+      touch.longPressTimer = null;
     }
   }
+}
 
-  function onPointerUp(e) {
-    const p = pointers.get(e.pointerId);
-    const wasSingle = pointers.size === 1;
-    pointers.delete(e.pointerId);
-    if (pointers.size < 2) pinch = null;
-    if (!p || !wasSingle || e.type === 'pointercancel') return;
-    const isTap = !p.moved && performance.now() - p.t < 600;
-    if (isTap && placing && hasHit && modelReady) place();
-  }
+function cleanupListeners() {
+  // Listeners live on overlayEl, not canvas — see start() for why.
+  overlayEl.removeEventListener('touchstart', onTouchStart);
+  overlayEl.removeEventListener('touchmove', onTouchMove);
+  overlayEl.removeEventListener('touchend', onTouchEnd);
+}
 
-  function place() {
-    placing = false;
-    reticle.visible = false;
-    if (els.move) els.move.hidden = false;
-    if (els.reset) els.reset.hidden = false;
-    setHint(currentHint());
-  }
+function onSessionEnd() {
+  hitTestSourceRequested = false;
+  hitTestSource = null;
+  placedModel = null;
+  anchor = null;
+  anchorGroup = null;
+  lastHitTestResult = null;
+  reticleSmoothed.initialized = false;
+  reticleSmoothed.velocity.set(0, 0, 0);
+  baseplate = null;
+  dragVelocity.set(0, 0, 0);
+  rotationVelocity = 0;
+  framesSinceReady = 0;
+  framesWithHit = 0;
+  consecutiveHits = 0;
+  lastHitPosition = null;
+  mixer = null;
+  clock = new THREE.Clock();
+  overlayEl.hidden = true;
+  cartBtn.hidden = true;
+  cleanupListeners();
+  if (renderer) renderer.setAnimationLoop(null);
+  if (typeof onExitCallback === 'function') onExitCallback();
+}
 
-  // ── per-frame ───────────────────────────────────────────────
-  function onFrame(_t, frame) {
-    if (frame && hitTestSource && placing) {
-      const refSpace = renderer.xr.getReferenceSpace();
-      const hits = frame.getHitTestResults(hitTestSource);
-      if (hits.length && refSpace) {
-        const pose = hits[0].getPose(refSpace);
-        if (pose) {
-          reticle.matrix.fromArray(pose.transform.matrix);
-          reticle.matrix.decompose(tmpPos, tmpQuat, tmpScale);
+function render(timestamp, frame) {
+  try {
+    if (!frame) return;
+    const referenceSpace = renderer.xr.getReferenceSpace();
+    const xrSession = renderer.xr.getSession();
+
+    if (!hitTestSourceRequested) {
+      hitTestSourceRequested = true; // set immediately so we never re-enter this branch
+      xrSession
+        .requestReferenceSpace('viewer')
+        .then((viewerSpace) => xrSession.requestHitTestSource({ space: viewerSpace }))
+        .then((source) => {
+          hitTestSource = source;
+          console.log('[AR] hit-test source ready');
+        })
+        .catch((err) => {
+          // Previously this rejection was unhandled, so a failure here left
+          // hitTestSource permanently null with no visible error — the
+          // reticle would simply never appear and the hint text would stay
+          // stuck on "find a surface" forever, looking identical to a
+          // real-world tracking issue.
+          console.error('[AR] failed to set up hit-test source:', err);
+          if (hintEl) hintEl.textContent = 'Hit-test setup failed: ' + err.message;
+        });
+      xrSession.addEventListener('end', onSessionEnd);
+    }
+
+    if (hitTestSource && !placedModel) {
+      const results = frame.getHitTestResults(hitTestSource);
+      framesSinceReady++;
+      if (results.length > 0) {
+        framesWithHit++;
+        lastHitTestResult = results[0];
+        const pose = results[0].getPose(referenceSpace);
+        const rawPosition = new THREE.Vector3().setFromMatrixPosition(new THREE.Matrix4().fromArray(pose.transform.matrix));
+        const rawQuaternion = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().fromArray(pose.transform.matrix));
+
+        // Improved plane detection: require consecutive stable hits before showing reticle
+        // This prevents false positives from transient detections and ensures we have a real plane
+        let positionStable = true;
+        if (lastHitPosition) {
+          const distFromLast = lastHitPosition.distanceTo(rawPosition);
+          // Position should not jump too much between consecutive frames for a stable plane
+          positionStable = distFromLast < 0.02; // 2cm threshold for stability
+        }
+        
+        if (positionStable) {
+          consecutiveHits = MIN_CONSECUTIVE_HITS; // Immediately ready on first stable hit
+        } else {
+          // Reset counter if position jumps too much (unstable detection)
+          consecutiveHits = 0; // Must get a new stable hit
+        }
+        lastHitPosition = rawPosition.clone();
+
+        // Only show reticle and allow placement after we have confirmed stable plane detection
+        if (consecutiveHits >= MIN_CONSECUTIVE_HITS) {
+          // Enhanced stabilization with adaptive smoothing and outlier rejection
+          if (!reticleSmoothed.initialized) {
+            reticleSmoothed.position.copy(rawPosition);
+            reticleSmoothed.quaternion.copy(rawQuaternion);
+            reticleSmoothed.velocity.set(0, 0, 0);
+            reticleSmoothed.initialized = true;
+          } else {
+            // Calculate distance from last known position to detect outliers
+            const dist = reticleSmoothed.position.distanceTo(rawPosition);
+            
+            // Reject sudden jumps (outliers) that are likely tracking errors
+            if (dist < OUTLIER_REJECTION_DIST) {
+              // Adaptive smoothing: use less smoothing when moving fast, more when stable
+              const speed = dist * 60; // Approximate frames per second
+              const adaptiveSmoothing = THREE.MathUtils.clamp(
+                RETICLE_SMOOTHING_BASE + speed * 0.5,
+                RETICLE_SMOOTHING_BASE,
+                RETICLE_SMOOTHING_MAX
+              );
+              
+              // Only update if movement is above threshold (ignore micro-jitter)
+              if (dist > POSITION_THRESHOLD) {
+                reticleSmoothed.position.lerp(rawPosition, 1 - adaptiveSmoothing);
+                reticleSmoothed.quaternion.slerp(rawQuaternion, 1 - adaptiveSmoothing);
+              }
+            }
+            // If dist >= OUTLIER_REJECTION_DIST, skip this frame's data as unreliable
+          }
+
           reticle.visible = true;
-          anchor.position.copy(tmpPos);                 // ghost preview follows the surface
-          anchor.visible = modelReady;
-          if (!hasHit) { hasHit = true; setHint(currentHint()); }
+          reticle.position.copy(reticleSmoothed.position);
+          reticle.quaternion.copy(reticleSmoothed.quaternion);
+        } else {
+          // Still scanning - don't show reticle yet, keep user informed
+          reticle.visible = false;
         }
       } else {
+        // No hits this frame - keep counter as-is (don't reset on brief dropouts)
+        lastHitTestResult = null;
         reticle.visible = false;
-        if (hasHit) { hasHit = false; setHint(currentHint()); }
+      }
+      // Lightweight on-screen diagnostics: updates roughly once a second so
+      // you can see live hit-test activity without a devtools connection.
+      if (framesSinceReady % 60 === 0 && hintEl) {
+        if (consecutiveHits >= MIN_CONSECUTIVE_HITS) {
+          hintEl.textContent = 'Surface found — tap to place';
+        } else if (results.length > 0) {
+          hintEl.textContent = `Detecting surface... (${consecutiveHits}/${MIN_CONSECUTIVE_HITS})`;
+        } else {
+          hintEl.textContent = `Scanning for a surface… (${framesWithHit}/${framesSinceReady} frames hit)`;
+        }
       }
     }
+
+    // Apply inertia after finger lift-off during drag
+    if (placedModel && touch.mode === null && (dragVelocity.lengthSq() > 0.0001 || Math.abs(rotationVelocity) > 0.001)) {
+      // Get camera direction for proper world-space movement
+      const forward = new THREE.Vector3();
+      controller.getWorldDirection(forward);
+      forward.y = 0;
+      forward.normalize();
+      const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+      
+      // Apply velocity with decay
+      const worldOffset = new THREE.Vector3()
+        .addScaledVector(right, dragVelocity.x * 0.004)
+        .addScaledVector(forward, -dragVelocity.y * 0.004);
+      
+      if (anchorGroup) {
+        const invQuat = anchorGroup.getWorldQuaternion(new THREE.Quaternion()).invert();
+        worldOffset.applyQuaternion(invQuat);
+      }
+      placedModel.position.add(worldOffset);
+      placedModel.rotation.y += rotationVelocity;
+      
+      // Decay velocities (inertia fade-out)
+      dragVelocity.multiplyScalar(DRAG_INERTIA);
+      rotationVelocity *= ROTATION_INERTIA;
+      
+      // Stop when negligible
+      if (dragVelocity.lengthSq() < 0.0001) dragVelocity.set(0, 0, 0);
+      if (Math.abs(rotationVelocity) < 0.001) rotationVelocity = 0;
+    }
+
+    // Keep the placed model visually locked to its physical anchor point.
+    // Without this, the model just sits at whatever fixed coordinate it was
+    // given at placement time, and can appear to drift or swim relative to
+    // the real surface as the device's tracking refines itself while you
+    // walk around it. anchorGroup carries the corrected pose; placedModel's
+    // own position/rotation stay local to it, so gestures aren't affected.
+    if (placedModel && anchor && anchorGroup) {
+      const anchorPose = frame.getPose(anchor.anchorSpace, referenceSpace);
+      if (anchorPose) {
+        anchorGroup.position.setFromMatrixPosition(new THREE.Matrix4().fromArray(anchorPose.transform.matrix));
+        anchorGroup.quaternion.setFromRotationMatrix(new THREE.Matrix4().fromArray(anchorPose.transform.matrix));
+        
+        // Update baseplate position to follow anchor corrections
+        if (baseplate && baseplate.parent === anchorGroup) {
+          baseplate.position.copy(placedModel.position);
+          baseplate.position.y = -0.01; // Maintain offset from model
+        }
+      }
+    }
+
+    // Update animation mixer if animations are present
+    if (mixer && placedModel) {
+      const delta = clock.getDelta();
+      mixer.update(delta);
+    }
+
     renderer.render(scene, camera);
+  } catch (err) {
+    console.error('Advanced AR render error:', err);
+    if (hintEl) hintEl.textContent = 'AR error: ' + err.message;
+    if (renderer) renderer.setAnimationLoop(null);
   }
+}
 
-  // ── loading ─────────────────────────────────────────────────
-  function makeLoader() {
-    const draco = new DRACOLoader().setDecoderPath(DRACO_PATH);
-    return new GLTFLoader().setDRACOLoader(draco).setMeshoptDecoder(MeshoptDecoder);
-  }
+async function start({ onExit, onAddToCart, modelUrl }) {
+  onExitCallback = onExit;
 
-  async function loadModel(url, fallbackUrl, targetSize) {
-    const loader = makeLoader();
-    let gltf;
-    try {
-      gltf = await loader.loadAsync(url);
-    } catch (err) {
-      if (!fallbackUrl || fallbackUrl === url) throw err;
-      console.warn('[AdvancedAR] model failed, using fallback:', url, err);
-      gltf = await loader.loadAsync(fallbackUrl);
+  // Use provided model URL or default to Astronaut
+  currentModelUrl = modelUrl || MODEL_URL;
+  canvas = document.getElementById('xr-canvas');
+  overlayEl = document.getElementById('arOverlay');
+  hintEl = document.getElementById('arHint');
+  exitBtn = document.getElementById('arExitBtn');
+  cartBtn = document.getElementById('arAddToCartBtn');
+
+  overlayEl.hidden = false;
+  hintEl.textContent = 'Move your phone slowly to find a surface, then tap to place.';
+  cartBtn.hidden = true;
+
+  renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+  renderer.xr.enabled = true;
+  // Without this, the renderer clears each frame to opaque black and paints
+  // straight over the camera passthrough — the classic "AR shows a black
+  // screen" bug. Alpha must be 0 so the camera feed shows through.
+  renderer.setClearColor(0x000000, 0);
+  // Matches model-viewer's default rendering setup — without correct tone
+  // mapping and color space, an environment map still looks washed out or
+  // oversaturated even once it's wired up.
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+  // Request light estimation for better immersion (optional feature)
+  // This allows the scene lighting to adapt to real-world conditions
+  try {
+    if ('requestLightEstimation' in THREE.WebXRManager.prototype) {
+      renderer.xr.setRequestLightEstimation(true);
+      lightEstimationEnabled = true;
     }
-    gltf.scene.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; } });
-    return normalizeModel(gltf.scene, targetSize).wrapper;
+  } catch (e) {
+    // Light estimation not available on this device/browser
+    console.log('[AR] Light estimation not available, using default lighting');
   }
 
-  // ── lifecycle ───────────────────────────────────────────────
-  async function isSupported() {
-    try {
-      if (!window.isSecureContext || !navigator.xr) return false;
-      return await navigator.xr.isSessionSupported('immersive-ar');
-    } catch { return false; }
+  // setupScene needs a live renderer to generate the PMREM environment map,
+  // so this must happen after the renderer above, not before it.
+  setupScene(renderer);
+
+  camera = new THREE.PerspectiveCamera();
+
+  // Three.js defaults to the 'local-floor' reference space, which is only
+  // guaranteed on VR headsets. Handheld phone AR does not guarantee floor
+  // tracking, so requesting it can throw "NotSupportedError: ... reference
+  // space type is not supported by this device" and leave the session with
+  // no working camera pose — which renders as a black screen even though
+  // the AR session itself started fine. 'local' is the space guaranteed for
+  // immersive-ar sessions, so use that instead.
+  renderer.xr.setReferenceSpaceType('local');
+
+  try {
+    loadedGltfTemplate = await loadModel(currentModelUrl);
+  } catch (err) {
+    console.error('Failed to load AR model:', err);
+    hintEl.textContent = 'Could not load the 3D model. Try again.';
+    return;
   }
 
-  async function start(options = {}) {
-    if (session) return true;
-    opts = options;
-    try {
-      init();
-      ended = false; endedByUser = false; placing = true; hasHit = false; modelReady = false;
-      anchor.visible = false; anchor.scale.setScalar(1); anchor.rotation.y = 0;
-      reticle.visible = false;
-      if (els.move) els.move.hidden = true;
-      if (els.reset) els.reset.hidden = true;
-      if (els.cart) els.cart.hidden = !opts.onAddToCart;
-      els.overlay.hidden = false;                    // DOM-overlay root must be visible
-      setHint('Starting camera…');
+  controller = renderer.xr.getController(0);
+  controller.addEventListener('select', placeModel);
+  scene.add(controller);
 
-      // start downloading the model right away, while the camera opens
-      const loading = loadModel(opts.modelUrl, opts.fallbackUrl, opts.targetSize || DEFAULT_SIZE_M);
-      loading.catch(() => {});                       // handled below
+  // During an immersive-ar session with dom-overlay, only elements inside
+  // the overlay root receive real DOM touch events — the canvas itself
+  // sits outside that root and never sees touchstart/touchmove/touchend,
+  // even though it's visually on screen. Attach gestures to overlayEl
+  // instead (see the matching pointer-events change in style.css).
+  overlayEl.addEventListener('touchstart', onTouchStart, { passive: true });
+  overlayEl.addEventListener('touchmove', onTouchMove, { passive: false });
+  overlayEl.addEventListener('touchend', onTouchEnd, { passive: true });
 
-      session = await navigator.xr.requestSession('immersive-ar', {
-        requiredFeatures: ['hit-test'],
-        optionalFeatures: ['dom-overlay', 'light-estimation'],
-        domOverlay: { root: els.overlay },
-      });
-      session.addEventListener('end', onSessionEnd);
-      await renderer.xr.setSession(session);
-      viewerSpace = await session.requestReferenceSpace('viewer');
-      hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
-      renderer.setAnimationLoop(onFrame);
-      setHint(currentHint());
+  exitBtn.addEventListener(
+    'click',
+    () => {
+      if (session) session.end();
+    },
+    { once: true }
+  );
 
-      modelWrapper = await loading;
-      if (ended) { disposeObject(modelWrapper); modelWrapper = null; return false; }
-      anchor.add(modelWrapper);
-      modelReady = true;
-      setHint(currentHint());
-      return true;
-    } catch (err) {
-      if (endedByUser) return false;               // user left while we were still starting
-      console.error('[AdvancedAR] failed to start:', err);
-      const msg = /load|fetch|network|gltf/i.test(String(err && err.message))
-        ? 'Couldn\'t load the 3D model. Try Simple AR instead.'
-        : 'Couldn\'t start Advanced AR. Try Simple AR instead.';
-      const s = session;
-      cleanup();
-      if (s) { try { await s.end(); } catch {} }
-      opts.onExit?.();
-      opts.onError?.(msg);
-      return false;
-    }
+  cartBtn.addEventListener('click', () => {
+    if (typeof onAddToCart === 'function') onAddToCart();
+    cartBtn.textContent = 'Added ✓';
+    setTimeout(() => {
+      cartBtn.textContent = 'Add to cart';
+    }, 1400);
+  });
+
+  try {
+    session = await navigator.xr.requestSession('immersive-ar', {
+      requiredFeatures: ['hit-test'],
+      optionalFeatures: ['dom-overlay', 'light-estimation'],
+      domOverlay: { root: overlayEl },
+    });
+  } catch (err) {
+    console.error('Failed to start AR session:', err);
+    overlayEl.hidden = true;
+    if (typeof onExit === 'function') onExit();
+    return;
   }
 
-  function stop() {
-    if (session) { session.end().catch(() => {}); } else { cleanup(); }
-  }
+  await renderer.xr.setSession(session);
+  renderer.setAnimationLoop(render);
+}
 
-  function onSessionEnd() {
-    endedByUser = true;
-    const cb = opts.onExit;
-    cleanup();
-    cb?.();
-  }
-
-  function cleanup() {
-    if (ended && !session) return;
-    ended = true;
-    clearTimeout(hintTimer);
-    try { hitTestSource?.cancel(); } catch {}
-    hitTestSource = null; viewerSpace = null;
-    renderer?.setAnimationLoop(null);
-    if (session) { session.removeEventListener('end', onSessionEnd); }
-    session = null;
-    pointers.clear(); pinch = null;
-    if (modelWrapper) { anchor.remove(modelWrapper); disposeObject(modelWrapper); modelWrapper = null; }
-    modelReady = false;
-    if (anchor) anchor.visible = false;
-    if (reticle) reticle.visible = false;
-    if (els?.overlay) els.overlay.hidden = true;
-  }
-
-  return { isSupported, start, stop };
-})();
-
-if (typeof window !== 'undefined') window.AdvancedAR = AdvancedAR;
-export default AdvancedAR;
+window.AdvancedAR = { isSupported, start };
